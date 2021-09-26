@@ -26,7 +26,7 @@ namespace CustomTimeline
         public PropertyType propertyType;
         public int intValue;
         public float floatValue;
-        public Texture2D texture;
+        public Texture texture;
         public Vector2 tilling;
         public Vector2 offset;
         public Color color;
@@ -83,7 +83,7 @@ namespace CustomTimeline
                     playable.property.color = EditorGUILayout.ColorField("value : ", playable.property.color);
                     break;
                 case PropertyType.Texture:
-                    playable.property.texture = (Texture2D)EditorGUILayout.ObjectField("value : ", playable.property.texture, typeof(Texture2D), false);
+                    playable.property.texture = (Texture)EditorGUILayout.ObjectField("value : ", playable.property.texture, typeof(Texture), false);
                     break;
                 case PropertyType.TextureTiling:
                     playable.property.tilling = EditorGUILayout.Vector2Field("value : ", playable.property.tilling);
