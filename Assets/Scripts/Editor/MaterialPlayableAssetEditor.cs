@@ -6,38 +6,36 @@ namespace CustomTimeline
     [CustomEditor(typeof(MaterialPlayableAsset))]
     internal sealed class MaterialPlayableAssetEditor : Editor
     {
+        const string VALUE_LABEL = "Property value";
         public override void OnInspectorGUI()
         {
             DrawDefaultInspector();
+            MaterialProperty prop = (target as MaterialPlayableAsset).property;
+            prop.propertyName = EditorGUILayout.TextField("Property name", prop.propertyName);
+            prop.propertyType = (PropertyType)EditorGUILayout.EnumPopup("Property type", prop.propertyType);
 
-            var playable = target as MaterialPlayableAsset;
-
-            playable.property.propertyName = EditorGUILayout.TextField("プロパティ名：", playable.property.propertyName);
-
-            playable.property.propertyType = (PropertyType)EditorGUILayout.EnumPopup(playable.property.propertyType);
-
-            switch (playable.property.propertyType)
+            switch (prop.propertyType)
             {
                 case PropertyType.Int:
-                    playable.property.intValue = EditorGUILayout.IntField("value : ", playable.property.intValue);
+                    prop.intValue = EditorGUILayout.IntField(VALUE_LABEL, prop.intValue);
                     break;
                 case PropertyType.Float:
-                    playable.property.floatValue = EditorGUILayout.FloatField("value : ", playable.property.floatValue);
+                    prop.floatValue = EditorGUILayout.FloatField(VALUE_LABEL, prop.floatValue);
                     break;
                 case PropertyType.Color:
-                    playable.property.color = EditorGUILayout.ColorField("value : ", playable.property.color);
+                    prop.color = EditorGUILayout.ColorField(VALUE_LABEL, prop.color);
                     break;
                 case PropertyType.Texture:
-                    playable.property.texture = (Texture)EditorGUILayout.ObjectField("value : ", playable.property.texture, typeof(Texture), false);
+                    prop.texture = (Texture)EditorGUILayout.ObjectField(VALUE_LABEL, prop.texture, typeof(Texture), false);
                     break;
                 case PropertyType.TextureTiling:
-                    playable.property.tilling = EditorGUILayout.Vector2Field("value : ", playable.property.tilling);
+                    prop.tilling = EditorGUILayout.Vector2Field(VALUE_LABEL, prop.tilling);
                     break;
                 case PropertyType.TextureOffset:
-                    playable.property.offset = EditorGUILayout.Vector2Field("value : ", playable.property.offset);
+                    prop.offset = EditorGUILayout.Vector2Field(VALUE_LABEL, prop.offset);
                     break;
                 case PropertyType.Vector:
-                    playable.property.vector = EditorGUILayout.Vector4Field("value : ", playable.property.vector);
+                    prop.vector = EditorGUILayout.Vector4Field(VALUE_LABEL, prop.vector);
                     break;
                 default:
                     break;
