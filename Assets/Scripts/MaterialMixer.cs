@@ -22,7 +22,7 @@ namespace CustomTimeline
         {
             if (bindMaterial == null)
                 return;
-            //プレビュー前に値を保持しておく
+            // Preserve values before preview
             if (presetMaterial == null)
                 presetMaterial = new Preset(bindMaterial);
             else
@@ -33,7 +33,8 @@ namespace CustomTimeline
         {
             if (bindMaterial == null)
                 return;
-            //プレビュー終了後に保持した値をコピーして最初に戻す
+            // Copy the value retained after the preview is finished and
+            // return it to the beginning
             if(presetMaterial != null)
                 presetMaterial.ApplyTo(bindMaterial);
         }
