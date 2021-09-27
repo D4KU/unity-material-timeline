@@ -2,7 +2,6 @@
 using UnityEngine;
 using UnityEngine.Playables;
 using UnityEngine.Timeline;
-using UnityEditor.Presets;
 
 namespace CustomTimeline
 {
@@ -15,8 +14,7 @@ namespace CustomTimeline
         internal IEnumerable<TimelineClip> clips;
 
         public Material bindMaterial;
-
-        private Preset presetMaterial;
+        private Material presetMaterial;
 
         public override void OnGraphStart(Playable playable)
         {
@@ -24,9 +22,9 @@ namespace CustomTimeline
                 return;
             // Preserve values before preview
             if (presetMaterial == null)
-                presetMaterial = new Preset(bindMaterial);
+                presetMaterial = new Material(bindMaterial);
             else
-                presetMaterial.UpdateProperties(bindMaterial);
+                presetMaterial.CopyPropertiesFromMaterial(bindMaterial);
         }
 
         public override void OnGraphStop(Playable playable)
@@ -35,8 +33,8 @@ namespace CustomTimeline
                 return;
             // Copy the value retained after the preview is finished and
             // return it to the beginning
-            if(presetMaterial != null)
-                presetMaterial.ApplyTo(bindMaterial);
+            if (presetMaterial != null)
+                bindMaterial.CopyPropertiesFromMaterial(presetMaterial);
         }
 
         public override void ProcessFrame(Playable playable, FrameData info, object playerData)
