@@ -29,7 +29,7 @@ namespace CustomTimeline
                     prop.texture = (Texture)EditorGUILayout.ObjectField(VALUE_LABEL, prop.texture, typeof(Texture), false);
                     break;
                 case PropertyType.TextureTiling:
-                    prop.tilling = EditorGUILayout.Vector2Field(VALUE_LABEL, prop.tilling);
+                    prop.tiling = EditorGUILayout.Vector2Field(VALUE_LABEL, prop.tiling);
                     break;
                 case PropertyType.TextureOffset:
                     prop.offset = EditorGUILayout.Vector2Field(VALUE_LABEL, prop.offset);

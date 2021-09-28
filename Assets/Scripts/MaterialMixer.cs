@@ -100,7 +100,7 @@ namespace CustomTimeline
                     property.texture = asset.property.texture;
                     break;
                 case PropertyType.TextureTiling:
-                    property.tilling = Vector2.Lerp(asset.property.tilling, nextAsset.property.tilling, weight);
+                    property.tiling = Vector2.Lerp(asset.property.tiling, nextAsset.property.tiling, weight);
                     break;
                 case PropertyType.TextureOffset:
                     property.offset = Vector2.Lerp(asset.property.offset, nextAsset.property.offset, weight);
@@ -130,7 +130,7 @@ namespace CustomTimeline
                     bindMaterial.SetTexture(property.propertyName, property.texture);
                     break;
                 case PropertyType.TextureTiling:
-                    bindMaterial.SetTextureScale(property.propertyName, property.tilling);
+                    bindMaterial.SetTextureScale(property.propertyName, property.tiling);
                     break;
                 case PropertyType.TextureOffset:
                     bindMaterial.SetTextureOffset(property.propertyName, property.offset);

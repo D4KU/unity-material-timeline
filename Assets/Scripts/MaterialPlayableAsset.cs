@@ -26,7 +26,7 @@ namespace CustomTimeline
         public int intValue;
         public float floatValue;
         public Texture texture;
-        public Vector2 tilling;
+        public Vector2 tiling;
         public Vector2 offset;
         public Color color;
         public Vector4 vector;
