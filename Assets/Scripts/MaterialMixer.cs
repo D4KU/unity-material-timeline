@@ -7,8 +7,6 @@ namespace CustomTimeline
 {
     public class MaterialMixer : PlayableBehaviour
     {
-        internal PlayableDirector director;
-
         // what's IEnumerable -> It's Array
         internal IEnumerable<TimelineClip> clips;
 
@@ -46,7 +44,6 @@ namespace CustomTimeline
 
             MaterialProperty finalProperty = new MaterialProperty();
 
-            double progressTime = director.time;
             IEnumerator<TimelineClip> enumerator = clips.GetEnumerator();
             enumerator.MoveNext();
             for (int i = 0; i < inputCount; i++)
@@ -54,23 +51,25 @@ namespace CustomTimeline
                 TimelineClip clip = enumerator.Current;
                 MaterialPlayableAsset asset = clip.asset as MaterialPlayableAsset;
                 float clipWeight = playable.GetInputWeight(i);
-                if (1.0f > clipWeight && clipWeight > 0.0f)
-                {
-                    enumerator.MoveNext();
-                    TimelineClip nextClip = enumerator.Current;
-                    MaterialPlayableAsset nextAsset = nextClip.asset as MaterialPlayableAsset;
 
-                    SwitchUpdateProperty(ref finalProperty, asset, nextAsset, 1.0f - clipWeight);
+                if (clipWeight > 0f)
+                {
+                    if (clipWeight < 1f)
+                    {
+                        // Mix with next clip
+                        enumerator.MoveNext();
+                        TimelineClip nextClip = enumerator.Current;
+                        MaterialPlayableAsset nextAsset = nextClip.asset as MaterialPlayableAsset;
+                        SwitchUpdateProperty(ref finalProperty, asset, nextAsset, 1.0f - clipWeight);
+                    }
+                    else
+                    {
+                        // Weight is 1, no mixing
+                        finalProperty = asset.property;
+                    }
 
                     break;
                 }
-
-                if (progressTime >= clip.start && progressTime <= clip.end)
-                {
-                    finalProperty = asset.property;
-                    break;
-                }
-
 
                 enumerator.MoveNext();
             }

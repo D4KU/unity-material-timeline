@@ -18,8 +18,6 @@ namespace CustomTimeline
 
             MaterialMixer behaviour = mixer.GetBehaviour();
             behaviour.clips = GetClips();
-            behaviour.director = director;
-
             return mixer;
         }
     }
