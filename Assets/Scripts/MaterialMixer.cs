@@ -7,42 +7,41 @@ namespace CustomTimeline
 {
     public class MaterialMixer : PlayableBehaviour
     {
-
         internal PlayableDirector director;
 
         // what's IEnumerable -> It's Array
         internal IEnumerable<TimelineClip> clips;
 
-        public Material bindMaterial;
+        private Material bindMaterial;
         private Material presetMaterial;
+        private bool firstFrameHappened;
 
-        public override void OnGraphStart(Playable playable)
+        public override void OnPlayableDestroy(Playable playable)
         {
+            firstFrameHappened = false;
+
             if (bindMaterial == null)
                 return;
-            // Preserve values before preview
-            if (presetMaterial == null)
-                presetMaterial = new Material(bindMaterial);
-            else
-                presetMaterial.CopyPropertiesFromMaterial(bindMaterial);
-        }
 
-        public override void OnGraphStop(Playable playable)
-        {
-            if (bindMaterial == null)
-                return;
-            // Copy the value retained after the preview is finished and
-            // return it to the beginning
+            // Restore original values
             if (presetMaterial != null)
                 bindMaterial.CopyPropertiesFromMaterial(presetMaterial);
         }
 
         public override void ProcessFrame(Playable playable, FrameData info, object playerData)
         {
+            bindMaterial = playerData as Material;
+            if (bindMaterial == null)
+                return;
+
+            if (!firstFrameHappened)
+            {
+                presetMaterial = new Material(bindMaterial);
+                firstFrameHappened = true;
+            }
+
             int inputCount = playable.GetInputCount();
             if (inputCount == 0)
-                return;
-            if (bindMaterial == null)
                 return;
 
             MaterialProperty finalProperty = new MaterialProperty();
@@ -77,7 +76,6 @@ namespace CustomTimeline
             }
 
             SwitchUpdateMaterial(finalProperty);
-
         }
 
         public void SwitchUpdateProperty(ref MaterialProperty property, MaterialPlayableAsset asset, MaterialPlayableAsset nextAsset, float weight)

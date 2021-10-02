@@ -16,13 +16,8 @@ namespace CustomTimeline
             if (director == null)
                 return mixer;
 
-            Material bindMaterial = director.GetGenericBinding(this) as Material;
             MaterialMixer behaviour = mixer.GetBehaviour();
             behaviour.clips = GetClips();
-            if (bindMaterial != null)
-            {
-                behaviour.bindMaterial = bindMaterial;
-            }
             behaviour.director = director;
 
             return mixer;
