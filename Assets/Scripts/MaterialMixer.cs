@@ -5,11 +5,10 @@ using UnityEngine.Timeline;
 
 namespace CustomTimeline
 {
+    using PropertyType = MaterialBehaviour.PropertyType;
+
     public class MaterialMixer : PlayableBehaviour
     {
-        // what's IEnumerable -> It's Array
-        internal IEnumerable<TimelineClip> clips;
-
         private Material bindMaterial;
         private Material presetMaterial;
         private bool firstFrameHappened;
@@ -42,75 +41,47 @@ namespace CustomTimeline
             if (inputCount == 0)
                 return;
 
-            MaterialProperty finalProperty = new MaterialProperty();
-
-            IEnumerator<TimelineClip> enumerator = clips.GetEnumerator();
-            enumerator.MoveNext();
             for (int i = 0; i < inputCount; i++)
             {
-                TimelineClip clip = enumerator.Current;
-                MaterialPlayableAsset asset = clip.asset as MaterialPlayableAsset;
                 float clipWeight = playable.GetInputWeight(i);
+                if (clipWeight == 0f)
+                    continue;
 
-                if (clipWeight > 0f)
+                MaterialBehaviour toApply;
+                var input = (ScriptPlayable<MaterialBehaviour>)
+                    playable.GetInput(i);
+
+                if (clipWeight < 1f)
                 {
-                    if (clipWeight < 1f)
+                    if (i == inputCount - 1)
                     {
-                        // Mix with next clip
-                        enumerator.MoveNext();
-                        TimelineClip nextClip = enumerator.Current;
-                        MaterialPlayableAsset nextAsset = nextClip.asset as MaterialPlayableAsset;
-                        SwitchUpdateProperty(ref finalProperty, asset, nextAsset, 1.0f - clipWeight);
+                        // Last clip
+                        // TODO Blend with presetMaterial
+                        toApply = input.GetBehaviour();
                     }
                     else
                     {
-                        // Weight is 1, no mixing
-                        finalProperty = asset.property;
+                        // Mix with next clip
+                        var nextInput = (ScriptPlayable<MaterialBehaviour>)
+                            playable.GetInput(i + 1);
+                        toApply = MaterialBehaviour.Lerp(
+                            nextInput.GetBehaviour(),
+                            input.GetBehaviour(),
+                            clipWeight);
                     }
-
-                    break;
+                }
+                else
+                {
+                    // Weight is 1, no mixing
+                    toApply = input.GetBehaviour();
                 }
 
-                enumerator.MoveNext();
-            }
-
-            SwitchUpdateMaterial(finalProperty);
-        }
-
-        public void SwitchUpdateProperty(ref MaterialProperty property, MaterialPlayableAsset asset, MaterialPlayableAsset nextAsset, float weight)
-        {
-            property.propertyName = asset.property.propertyName;
-            property.propertyType = asset.property.propertyType;
-
-            switch (property.propertyType)
-            {
-                case PropertyType.Int:
-                    property.intValue = (int)Mathf.Lerp(asset.property.intValue, nextAsset.property.intValue, weight);
-                    break;
-                case PropertyType.Float:
-                    property.floatValue = Mathf.Lerp(asset.property.floatValue, nextAsset.property.floatValue, weight);
-                    break;
-                case PropertyType.Color:
-                    property.color = Color.Lerp(asset.property.color, nextAsset.property.color, weight);
-                    break;
-                case PropertyType.Texture:
-                    property.texture = asset.property.texture;
-                    break;
-                case PropertyType.TextureTiling:
-                    property.tiling = Vector2.Lerp(asset.property.tiling, nextAsset.property.tiling, weight);
-                    break;
-                case PropertyType.TextureOffset:
-                    property.offset = Vector2.Lerp(asset.property.offset, nextAsset.property.offset, weight);
-                    break;
-                case PropertyType.Vector:
-                    property.vector = Vector4.Lerp(asset.property.vector, nextAsset.property.vector, weight);
-                    break;
-                default:
-                    break;
+                SwitchUpdateMaterial(toApply);
+                break;
             }
         }
 
-        public void SwitchUpdateMaterial(MaterialProperty property)
+        public void SwitchUpdateMaterial(MaterialBehaviour property)
         {
             switch (property.propertyType)
             {
