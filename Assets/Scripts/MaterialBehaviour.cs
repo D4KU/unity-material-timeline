@@ -30,40 +30,102 @@ namespace CustomTimeline
         public Color color;
         public Vector4 vector;
 
-        static public MaterialBehaviour Lerp(
-            MaterialBehaviour a,
-            MaterialBehaviour b,
-            float t)
+        public MaterialBehaviour(){}
+        public MaterialBehaviour(MaterialBehaviour source)
         {
-            var c = new MaterialBehaviour();
-            c.propertyName = a.propertyName;
-            c.propertyType = a.propertyType;
+            propertyName = source.propertyName;
+            propertyType = source.propertyType;
+            intValue = source.intValue;
+            floatValue = source.floatValue;
+            texture = source.texture;
+            color = source.color;
+            tiling = source.tiling;
+            offset = source.offset;
+            vector = source.vector;
+        }
 
-            switch (a.propertyType)
+        public void ApplyFromMaterial(Material source)
+        {
+            switch (propertyType)
             {
                 case PropertyType.Int:
-                    c.intValue = (int)Mathf.Lerp(a.intValue, b.intValue, t);
+                    intValue = source.GetInt(propertyName);
                     break;
                 case PropertyType.Float:
-                    c.floatValue = Mathf.Lerp(a.floatValue, b.floatValue, t);
+                    floatValue = source.GetFloat(propertyName);
                     break;
                 case PropertyType.Texture:
-                    c.texture = a.texture;
+                    texture = source.GetTexture(propertyName);
                     break;
                 case PropertyType.Color:
-                    c.color = Color.Lerp(a.color, b.color, t);
+                    color = source.GetColor(propertyName);
                     break;
                 case PropertyType.TextureTiling:
-                    c.tiling = Vector2.Lerp(a.tiling, b.tiling, t);
+                    tiling = source.GetTextureScale(propertyName);
                     break;
                 case PropertyType.TextureOffset:
-                    c.offset = Vector2.Lerp(a.offset, b.offset, t);
+                    offset = source.GetTextureOffset(propertyName);
                     break;
                 case PropertyType.Vector:
-                    c.vector = Vector4.Lerp(a.vector, b.vector, t);
+                    vector = source.GetVector(propertyName);
                     break;
             }
-            return c;
+        }
+
+        public void ApplyToMaterial(Material target)
+        {
+            switch (propertyType)
+            {
+                case PropertyType.Int:
+                    target.SetInt(propertyName, intValue);
+                    break;
+                case PropertyType.Float:
+                    target.SetFloat(propertyName, floatValue);
+                    break;
+                case PropertyType.Color:
+                    target.SetColor(propertyName, color);
+                    break;
+                case PropertyType.Texture:
+                    target.SetTexture(propertyName, texture);
+                    break;
+                case PropertyType.TextureTiling:
+                    target.SetTextureScale(propertyName, tiling);
+                    break;
+                case PropertyType.TextureOffset:
+                    target.SetTextureOffset(propertyName, offset);
+                    break;
+                case PropertyType.Vector:
+                    target.SetVector(propertyName, vector);
+                    break;
+            }
+        }
+
+        public void Lerp(MaterialBehaviour a, MaterialBehaviour b, float t)
+        {
+            switch (propertyType)
+            {
+                case PropertyType.Int:
+                    intValue = (int)Mathf.Lerp(a.intValue, b.intValue, t);
+                    break;
+                case PropertyType.Float:
+                    floatValue = Mathf.Lerp(a.floatValue, b.floatValue, t);
+                    break;
+                case PropertyType.Texture:
+                    texture = a.texture;
+                    break;
+                case PropertyType.Color:
+                    color = Color.Lerp(a.color, b.color, t);
+                    break;
+                case PropertyType.TextureTiling:
+                    tiling = Vector2.Lerp(a.tiling, b.tiling, t);
+                    break;
+                case PropertyType.TextureOffset:
+                    offset = Vector2.Lerp(a.offset, b.offset, t);
+                    break;
+                case PropertyType.Vector:
+                    vector = Vector4.Lerp(a.vector, b.vector, t);
+                    break;
+            }
         }
     }
 }

@@ -2,6 +2,7 @@
 using UnityEngine;
 using UnityEngine.Playables;
 using UnityEngine.Timeline;
+using System.Linq;
 
 namespace CustomTimeline
 {
@@ -41,75 +42,46 @@ namespace CustomTimeline
             if (inputCount == 0)
                 return;
 
-            for (int i = 0; i < inputCount; i++)
+            var activeClips = from i in Enumerable.Range(0, inputCount)
+                              where playable.GetInputWeight(i) > 0f
+                              select i;
+
+            foreach (int i in activeClips)
             {
                 float clipWeight = playable.GetInputWeight(i);
-                if (clipWeight == 0f)
-                    continue;
-
-                MaterialBehaviour toApply;
                 var input = (ScriptPlayable<MaterialBehaviour>)
                     playable.GetInput(i);
+                MaterialBehaviour clipData = input.GetBehaviour();
+                MaterialBehaviour toApply = clipData;
 
-                if (clipWeight < 1f)
+                if (activeClips.Count() > 1)
                 {
-                    if (i == inputCount - 1)
-                    {
-                        // Last clip
-                        // TODO Blend with presetMaterial
-                        toApply = input.GetBehaviour();
-                    }
-                    else
-                    {
-                        // Mix with next clip
-                        var nextInput = (ScriptPlayable<MaterialBehaviour>)
-                            playable.GetInput(i + 1);
-                        toApply = MaterialBehaviour.Lerp(
+                    // Mix with next clip
+                    toApply = new MaterialBehaviour(clipData);
+                    var nextInput = (ScriptPlayable<MaterialBehaviour>)
+                        playable.GetInput(i + 1);
+                    toApply.Lerp(
                             nextInput.GetBehaviour(),
-                            input.GetBehaviour(),
+                            clipData,
                             clipWeight);
-                    }
                 }
                 else
                 {
-                    // Weight is 1, no mixing
-                    toApply = input.GetBehaviour();
+                    toApply = new MaterialBehaviour(clipData);
+                    if (clipWeight < 1f)
+                    {
+                        // Mix with preset Material
+                        toApply.ApplyFromMaterial(presetMaterial);
+                        toApply.Lerp(toApply, clipData, clipWeight);
+                    }
                 }
 
-                SwitchUpdateMaterial(toApply);
-                break;
+                toApply.ApplyToMaterial(bindMaterial);
+                return;
             }
-        }
 
-        public void SwitchUpdateMaterial(MaterialBehaviour property)
-        {
-            switch (property.propertyType)
-            {
-                case PropertyType.Int:
-                    bindMaterial.SetInt(property.propertyName, property.intValue);
-                    break;
-                case PropertyType.Float:
-                    bindMaterial.SetFloat(property.propertyName, property.floatValue);
-                    break;
-                case PropertyType.Color:
-                    bindMaterial.SetColor(property.propertyName, property.color);
-                    break;
-                case PropertyType.Texture:
-                    bindMaterial.SetTexture(property.propertyName, property.texture);
-                    break;
-                case PropertyType.TextureTiling:
-                    bindMaterial.SetTextureScale(property.propertyName, property.tiling);
-                    break;
-                case PropertyType.TextureOffset:
-                    bindMaterial.SetTextureOffset(property.propertyName, property.offset);
-                    break;
-                case PropertyType.Vector:
-                    bindMaterial.SetVector(property.propertyName, property.vector);
-                    break;
-                default:
-                    break;
-            }
+            // No clip was found with weight > 0
+            bindMaterial.CopyPropertiesFromMaterial(presetMaterial);
         }
-
     }
 }
