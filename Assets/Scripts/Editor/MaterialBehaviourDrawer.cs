@@ -33,11 +33,15 @@ namespace CustomTimeline
             EditorGUI.PropertyField(singleFieldRect, typeProp);
             singleFieldRect.y += LineHeight;
 
-            var nameProp = property.FindPropertyRelative("propertyName");
-            EditorGUI.PropertyField(singleFieldRect, nameProp);
-            singleFieldRect.y += LineHeight;
+            var propType = (PropertyType)typeProp.enumValueIndex;
+            if (propType != PropertyType.Material)
+            {
+                var nameProp = property.FindPropertyRelative("propertyName");
+                EditorGUI.PropertyField(singleFieldRect, nameProp);
+                singleFieldRect.y += LineHeight;
+            }
 
-            string valuePropName = (PropertyType)typeProp.enumValueIndex switch
+            string valuePropName = propType switch
             {
                 PropertyType.Int => "intValue",
                 PropertyType.Float => "floatValue",
@@ -46,6 +50,7 @@ namespace CustomTimeline
                 PropertyType.TextureTiling => "tiling",
                 PropertyType.TextureOffset => "offset",
                 PropertyType.Vector => "vector",
+                PropertyType.Material => "material",
                 _ => throw new ArgumentOutOfRangeException(),
             };
 

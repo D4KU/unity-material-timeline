@@ -17,7 +17,8 @@ namespace CustomTimeline
             TextureTiling,
             TextureOffset,
             Color,
-            Vector
+            Vector,
+            Material,
         }
 
         public string propertyName;
@@ -29,6 +30,7 @@ namespace CustomTimeline
         public Vector2 offset;
         public Color color;
         public Vector4 vector;
+        public Material material;
 
         public MaterialBehaviour(){}
         public MaterialBehaviour(MaterialBehaviour source)
@@ -42,6 +44,7 @@ namespace CustomTimeline
             tiling = source.tiling;
             offset = source.offset;
             vector = source.vector;
+            material = source.material;
         }
 
         public void ApplyFromMaterial(Material source)
@@ -68,6 +71,9 @@ namespace CustomTimeline
                     break;
                 case PropertyType.Vector:
                     vector = source.GetVector(propertyName);
+                    break;
+                case PropertyType.Material:
+                    material = new Material(source);
                     break;
             }
         }
@@ -97,6 +103,10 @@ namespace CustomTimeline
                 case PropertyType.Vector:
                     target.SetVector(propertyName, vector);
                     break;
+                case PropertyType.Material:
+                    if (material != null)
+                        target.CopyPropertiesFromMaterial(material);
+                    break;
             }
         }
 
@@ -124,6 +134,10 @@ namespace CustomTimeline
                     break;
                 case PropertyType.Vector:
                     vector = Vector4.Lerp(a.vector, b.vector, t);
+                    break;
+                case PropertyType.Material:
+                    if (material != null && a.material != null && b.material != null)
+                        material.Lerp(a.material, b.material, t);
                     break;
             }
         }
