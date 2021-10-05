@@ -4,19 +4,18 @@ using UnityEngine.Timeline;
 
 namespace CustomTimeline
 {
-    [System.Serializable]
     public class MaterialPlayableAsset : PlayableAsset, ITimelineClipAsset
     {
-        public MaterialBehaviour data;
+        public MaterialBehaviour data = new MaterialBehaviour();
 
         public ClipCaps clipCaps
         {
             get
             {
                 if (data.propertyType == MaterialBehaviour.PropertyType.Texture)
-                    return ClipCaps.None;
+                    return ClipCaps.Extrapolation;
                 else
-                    return ClipCaps.Blending | ClipCaps.SpeedMultiplier;
+                    return ClipCaps.Extrapolation | ClipCaps.Blending;
             }
         }
 
