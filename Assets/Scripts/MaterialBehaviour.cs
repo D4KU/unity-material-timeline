@@ -1,6 +1,7 @@
 ﻿using UnityEngine.Playables;
 using UnityEngine;
 using System;
+using UnityEngine.Rendering;
 
 // TODO Only store the values used.
 // Create a clip for each property type?
@@ -78,28 +79,49 @@ public class MaterialBehaviour : PlayableBehaviour
 
     public void ApplyToMaterial(Material target)
     {
+        var shader = target.shader;
+        int propIdx = shader.FindPropertyIndex(propertyName);
+        if (propIdx < 0)
+            // passed material doesn't have matching property
+            return;
+
+        ShaderPropertyType pt = shader.GetPropertyType(propIdx);
+
         switch (propertyType)
         {
             case PropertyType.Int:
-                target.SetInt(propertyName, intValue);
+                // Ensure a property with matching type actually exists in the
+                // material
+                if (pt == ShaderPropertyType.Float ||
+                    pt == ShaderPropertyType.Range)
+                    target.SetInt(propertyName, intValue);
                 break;
             case PropertyType.Float:
-                target.SetFloat(propertyName, floatValue);
+                if (pt == ShaderPropertyType.Float ||
+                    pt == ShaderPropertyType.Range)
+                    target.SetFloat(propertyName, floatValue);
                 break;
             case PropertyType.Color:
-                target.SetColor(propertyName, color);
+                if (pt == ShaderPropertyType.Color ||
+                    pt == ShaderPropertyType.Vector)
+                    target.SetColor(propertyName, color);
                 break;
             case PropertyType.Texture:
-                target.SetTexture(propertyName, texture);
+                if (pt == ShaderPropertyType.Texture)
+                    target.SetTexture(propertyName, texture);
                 break;
             case PropertyType.TextureTiling:
-                target.SetTextureScale(propertyName, tiling);
+                if (pt == ShaderPropertyType.Texture)
+                    target.SetTextureScale(propertyName, tiling);
                 break;
             case PropertyType.TextureOffset:
-                target.SetTextureOffset(propertyName, offset);
+                if (pt == ShaderPropertyType.Texture)
+                    target.SetTextureOffset(propertyName, offset);
                 break;
             case PropertyType.Vector:
-                target.SetVector(propertyName, vector);
+                if (pt == ShaderPropertyType.Color ||
+                    pt == ShaderPropertyType.Vector)
+                    target.SetVector(propertyName, vector);
                 break;
             case PropertyType.Material:
                 if (material != null)
