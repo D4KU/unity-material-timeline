@@ -14,7 +14,7 @@ public class MaterialBehaviourDrawer : PropertyDrawer
     public override float GetPropertyHeight(
             SerializedProperty property,
             GUIContent label)
-        => 3 * LineHeight;
+        => 7 * LineHeight;
 
     public override void OnGUI(
             Rect position,
@@ -53,6 +53,6 @@ public class MaterialBehaviourDrawer : PropertyDrawer
         };
 
         var valueProp = property.FindPropertyRelative(valuePropName);
-        EditorGUI.PropertyField(singleFieldRect, valueProp);
+        EditorGUI.PropertyField(singleFieldRect, valueProp, true);
     }
 }
