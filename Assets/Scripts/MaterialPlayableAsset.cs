@@ -2,24 +2,21 @@
 using UnityEngine.Playables;
 using UnityEngine.Timeline;
 
-namespace CustomTimeline
+public class MaterialPlayableAsset : PlayableAsset, ITimelineClipAsset
 {
-    public class MaterialPlayableAsset : PlayableAsset, ITimelineClipAsset
+    public MaterialBehaviour data = new MaterialBehaviour();
+
+    public ClipCaps clipCaps
     {
-        public MaterialBehaviour data = new MaterialBehaviour();
-
-        public ClipCaps clipCaps
+        get
         {
-            get
-            {
-                if (data.propertyType == MaterialBehaviour.PropertyType.Texture)
-                    return ClipCaps.Extrapolation;
-                else
-                    return ClipCaps.Extrapolation | ClipCaps.Blending;
-            }
+            if (data.propertyType == MaterialBehaviour.PropertyType.Texture)
+                return ClipCaps.Extrapolation;
+            else
+                return ClipCaps.Extrapolation | ClipCaps.Blending;
         }
-
-        public override Playable CreatePlayable(PlayableGraph graph, GameObject owner)
-            => ScriptPlayable<MaterialBehaviour>.Create(graph, data);
     }
+
+    public override Playable CreatePlayable(PlayableGraph graph, GameObject owner)
+        => ScriptPlayable<MaterialBehaviour>.Create(graph, data);
 }
