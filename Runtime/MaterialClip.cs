@@ -2,7 +2,7 @@
 using UnityEngine.Playables;
 using UnityEngine.Timeline;
 
-public class MaterialPlayableAsset : PlayableAsset, ITimelineClipAsset
+public class MaterialClip : PlayableAsset, ITimelineClipAsset
 {
     public MaterialBehaviour data = new MaterialBehaviour();
 

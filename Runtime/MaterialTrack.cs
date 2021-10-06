@@ -4,7 +4,7 @@ using UnityEngine.Timeline;
 
 [TrackBindingType(typeof(Material))]
 [TrackColor(1, 0, 0)]
-[TrackClipType(typeof(MaterialPlayableAsset))]
+[TrackClipType(typeof(MaterialClip))]
 public class MaterialTrack : TrackAsset
 {
     public override Playable CreateTrackMixer(
