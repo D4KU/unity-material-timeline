@@ -1,0 +1,16 @@
+{
+    "name": "material-timeline.Editor",
+    "rootNamespace": "",
+    "references": [
+        "GUID:5290d18bad0b2df42a8b58e9df0ed206"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

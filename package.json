@@ -1,0 +1,12 @@
+{
+  "name": "com.d4ku.material-timeline",
+  "version": "0.1.0",
+  "displayName": "Material Timeline",
+  "description": "Animate material properties in timelines",
+  "samples": [
+    {
+      "displayName": "Sample",
+      "path": "Samples~/Sample"
+    }
+  ]
+}
