@@ -20,16 +20,37 @@ public class MaterialBehaviour : PlayableBehaviour
         Vector,
         Material,
     }
+    private const string TOOLTIP = "New value of the shader property";
 
+    [Tooltip("The shader property to manipulate (e.g. '_BaseColor')")]
     public string propertyName;
+
+    [Tooltip("Type of the shader property to manipulate")]
     public PropertyType propertyType;
+
+    [Tooltip(TOOLTIP)]
     public int intValue;
+
+    [Tooltip(TOOLTIP)]
     public float floatValue;
+
+    [Tooltip(TOOLTIP)]
     public Texture texture;
+
+    [Tooltip(TOOLTIP)]
     public Vector2 tiling;
+
+    [Tooltip(TOOLTIP)]
     public Vector2 offset;
+
+    [Tooltip(TOOLTIP)]
     public Color color;
+
+    [Tooltip(TOOLTIP)]
     public Vector4 vector;
+
+    [Tooltip("Override all properties of the bound material with the ones " +
+            "found in this material")]
     public Material material;
 
     public MaterialBehaviour() : base() {}
@@ -48,6 +69,9 @@ public class MaterialBehaviour : PlayableBehaviour
         material = source.material;
     }
 
+    /// <summary>
+    /// Set this behaviour's value from the given material
+    /// </summary>
     public void ApplyFromMaterial(Material source)
     {
         if (!ShaderHasProperty(source.shader))
@@ -82,6 +106,9 @@ public class MaterialBehaviour : PlayableBehaviour
         }
     }
 
+    /// <summary>
+    /// Apply this behaviour's value to the passed material
+    /// </summary>
     public void ApplyToMaterial(Material target)
     {
         if (!ShaderHasProperty(target.shader))
@@ -117,6 +144,10 @@ public class MaterialBehaviour : PlayableBehaviour
         }
     }
 
+    /// <summary>
+    /// Apply the linear interpolation of <param name="a"/> and
+    /// <param name="b"/> to this behaviour
+    /// </summary>
     public void Lerp(MaterialBehaviour a, MaterialBehaviour b, float t)
     {
         switch (propertyType)
@@ -149,14 +180,18 @@ public class MaterialBehaviour : PlayableBehaviour
         }
     }
 
-    bool ShaderHasProperty(Shader shader)
+    /// <summary>
+    /// Return true if the passed shader supports the property specified
+    /// in this class
+    /// </summary>
+    private bool ShaderHasProperty(Shader shader)
     {
         int propertyIndex = shader.FindPropertyIndex(propertyName);
         if (propertyIndex < 0)
-            // Passed material doesn't have any property with entered name
+            // Passed shader doesn't have any property with entered name
             return false;
 
-        // Return if found property has matching type
+        // Return true if found property has matching type
         var t = shader.GetPropertyType(propertyIndex);
         return propertyType switch
         {

@@ -4,20 +4,28 @@ using System.Linq;
 
 public class MaterialMixer : PlayableBehaviour
 {
-    private Material bindMaterial;
-    private Material presetMaterial;
+    /// <summary>
+    /// Material manipulated by the track
+    /// </summary>
+    private Material boundMaterial;
+
+    /// <summary>
+    /// Initial state before timeline executed
+    /// </summary>
+    private Material defaultMaterial;
+
+    /// <summary>
+    /// Initialization helper
+    /// </summary>
     private bool firstFrameHappened;
 
     public override void OnPlayableDestroy(Playable playable)
     {
         firstFrameHappened = false;
 
-        if (bindMaterial == null)
-            return;
-
         // Restore original values
-        if (presetMaterial != null)
-            bindMaterial.CopyPropertiesFromMaterial(presetMaterial);
+        if (boundMaterial != null && defaultMaterial != null)
+            boundMaterial.CopyPropertiesFromMaterial(defaultMaterial);
     }
 
     public override void ProcessFrame(
@@ -25,13 +33,14 @@ public class MaterialMixer : PlayableBehaviour
         FrameData info,
         object playerData)
     {
-        bindMaterial = playerData as Material;
-        if (bindMaterial == null)
+        boundMaterial = playerData as Material;
+        if (boundMaterial == null)
             return;
 
         if (!firstFrameHappened)
         {
-            presetMaterial = new Material(bindMaterial);
+            // Save original value
+            defaultMaterial = new Material(boundMaterial);
             firstFrameHappened = true;
         }
 
@@ -39,6 +48,7 @@ public class MaterialMixer : PlayableBehaviour
         if (inputCount == 0)
             return;
 
+        // Get clips contributing to the current frame (weight > 0)
         var activeClips = from i in Enumerable.Range(0, inputCount)
                           where playable.GetInputWeight(i) > 0f
                           select i;
@@ -49,35 +59,30 @@ public class MaterialMixer : PlayableBehaviour
             var input = (ScriptPlayable<MaterialBehaviour>)
                 playable.GetInput(i);
             MaterialBehaviour clipData = input.GetBehaviour();
-            MaterialBehaviour toApply = clipData;
+            MaterialBehaviour toApply = new MaterialBehaviour(clipData);
 
             if (activeClips.Count() > 1)
             {
                 // Mix with next clip
-                toApply = new MaterialBehaviour(clipData);
                 var nextInput = (ScriptPlayable<MaterialBehaviour>)
                     playable.GetInput(i + 1);
-                toApply.Lerp(
-                        nextInput.GetBehaviour(),
-                        clipData,
-                        clipWeight);
+                toApply.Lerp(nextInput.GetBehaviour(), clipData, clipWeight);
             }
             else
             {
-                toApply = new MaterialBehaviour(clipData);
                 if (clipWeight < 1f)
                 {
-                    // Mix with preset Material
-                    toApply.ApplyFromMaterial(presetMaterial);
+                    // Mix with default Material
+                    toApply.ApplyFromMaterial(defaultMaterial);
                     toApply.Lerp(toApply, clipData, clipWeight);
                 }
             }
 
-            toApply.ApplyToMaterial(bindMaterial);
+            toApply.ApplyToMaterial(boundMaterial);
             return;
         }
 
         // No clip was found with weight > 0
-        bindMaterial.CopyPropertiesFromMaterial(presetMaterial);
+        boundMaterial.CopyPropertiesFromMaterial(defaultMaterial);
     }
 }
