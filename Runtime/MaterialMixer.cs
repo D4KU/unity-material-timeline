@@ -48,41 +48,40 @@ public class MaterialMixer : PlayableBehaviour
         if (inputCount == 0)
             return;
 
+        boundMaterial.CopyPropertiesFromMaterial(defaultMaterial);
+
         // Get clips contributing to the current frame (weight > 0)
         var activeClips = from i in Enumerable.Range(0, inputCount)
                           where playable.GetInputWeight(i) > 0f
                           select i;
 
-        foreach (int i in activeClips)
-        {
-            float clipWeight = playable.GetInputWeight(i);
-            var input = (ScriptPlayable<MaterialBehaviour>)
-                playable.GetInput(i);
-            MaterialBehaviour clipData = input.GetBehaviour();
-            MaterialBehaviour toApply = new MaterialBehaviour(clipData);
+        // foreach (int i in activeClips)
+        // {
+        //     float clipWeight = playable.GetInputWeight(i);
+        //     var input = (ScriptPlayable<MaterialBehaviour>)
+        //         playable.GetInput(i);
+        //     MaterialBehaviour clipData = input.GetBehaviour();
+        //     MaterialBehaviour toApply = new MaterialBehaviour(clipData);
 
-            if (activeClips.Count() > 1)
-            {
-                // Mix with next clip
-                var nextInput = (ScriptPlayable<MaterialBehaviour>)
-                    playable.GetInput(i + 1);
-                toApply.Lerp(nextInput.GetBehaviour(), clipData, clipWeight);
-            }
-            else
-            {
-                if (clipWeight < 1f)
-                {
-                    // Mix with default Material
-                    toApply.ApplyFromMaterial(defaultMaterial);
-                    toApply.Lerp(toApply, clipData, clipWeight);
-                }
-            }
+        //     if (activeClips.Count() > 1)
+        //     {
+        //         // Mix with next clip
+        //         var nextInput = (ScriptPlayable<MaterialBehaviour>)
+        //             playable.GetInput(i + 1);
+        //         toApply.Lerp(nextInput.GetBehaviour(), clipData, clipWeight);
+        //     }
+        //     else
+        //     {
+        //         if (clipWeight < 1f)
+        //         {
+        //             // Mix with default Material
+        //             toApply.ApplyFromMaterial(defaultMaterial);
+        //             toApply.Lerp(toApply, clipData, clipWeight);
+        //         }
+        //     }
 
-            toApply.ApplyToMaterial(boundMaterial);
-            return;
-        }
-
-        // No clip was found with weight > 0
-        boundMaterial.CopyPropertiesFromMaterial(defaultMaterial);
+        //     toApply.ApplyToMaterial(boundMaterial);
+        //     return;
+        // }
     }
 }

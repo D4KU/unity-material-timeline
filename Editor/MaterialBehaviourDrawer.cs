@@ -1,10 +1,7 @@
 using UnityEditor;
 using UnityEngine;
-using System;
 
-using PropertyType = MaterialBehaviour.PropertyType;
-
-[CustomPropertyDrawer(typeof(MaterialBehaviour))]
+[CustomPropertyDrawer(typeof(MaterialBehaviourBase), useForChildren: true)]
 public class MaterialBehaviourDrawer : PropertyDrawer
 {
     float LineHeight
@@ -27,32 +24,11 @@ public class MaterialBehaviourDrawer : PropertyDrawer
             position.width,
             EditorGUIUtility.singleLineHeight);
 
-        var typeProp = property.FindPropertyRelative("propertyType");
-        EditorGUI.PropertyField(singleFieldRect, typeProp);
+        var nameProp = property.FindPropertyRelative("propertyName");
+        EditorGUI.PropertyField(singleFieldRect, nameProp);
         singleFieldRect.y += LineHeight;
 
-        var propType = (PropertyType)typeProp.enumValueIndex;
-        if (propType != PropertyType.Material)
-        {
-            var nameProp = property.FindPropertyRelative("propertyName");
-            EditorGUI.PropertyField(singleFieldRect, nameProp);
-            singleFieldRect.y += LineHeight;
-        }
-
-        string valuePropName = propType switch
-        {
-            PropertyType.Int => "intValue",
-            PropertyType.Float => "floatValue",
-            PropertyType.Color => "color",
-            PropertyType.Texture => "texture",
-            PropertyType.TextureTiling => "tiling",
-            PropertyType.TextureOffset => "offset",
-            PropertyType.Vector => "vector",
-            PropertyType.Material => "material",
-            _ => throw new ArgumentOutOfRangeException(),
-        };
-
-        var valueProp = property.FindPropertyRelative(valuePropName);
+        var valueProp = property.FindPropertyRelative("value");
         EditorGUI.PropertyField(singleFieldRect, valueProp, true);
     }
 }

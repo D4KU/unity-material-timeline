@@ -2,108 +2,26 @@
 using UnityEngine;
 using System;
 using Spt = UnityEngine.Rendering.ShaderPropertyType;
-using Pt = MaterialBehaviour.PropertyType;
 
-// TODO Only store the values used.
-// Create a clip for each property type?
-[Serializable]
-public class MaterialBehaviour : PlayableBehaviour
+/// <summary>
+/// This base class exists because a <see cref="PropertyDrawer"/> can't
+/// serialize generic types
+/// </summary>
+public abstract class MaterialBehaviourBase : PlayableBehaviour {}
+
+public abstract class MaterialBehaviour<T> : MaterialBehaviourBase
 {
-    public enum PropertyType
-    {
-        Int,
-        Float,
-        Texture,
-        TextureTiling,
-        TextureOffset,
-        Color,
-        Vector,
-        Material,
-    }
-    private const string TOOLTIP = "New value of the shader property";
-
     [Tooltip("The shader property to manipulate (e.g. '_BaseColor')")]
     public string propertyName;
 
-    [Tooltip("Type of the shader property to manipulate")]
-    public PropertyType propertyType;
-
-    [Tooltip(TOOLTIP)]
-    public int intValue;
-
-    [Tooltip(TOOLTIP)]
-    public float floatValue;
-
-    [Tooltip(TOOLTIP)]
-    public Texture texture;
-
-    [Tooltip(TOOLTIP)]
-    public Vector2 tiling;
-
-    [Tooltip(TOOLTIP)]
-    public Vector2 offset;
-
-    [Tooltip(TOOLTIP)]
-    public Color color;
-
-    [Tooltip(TOOLTIP)]
-    public Vector4 vector;
-
-    [Tooltip("Override all properties of the bound material with the ones " +
-            "found in this material")]
-    public Material material;
+    [Tooltip("New value of the shader property")]
+    public T value;
 
     public MaterialBehaviour() : base() {}
-
-    public MaterialBehaviour(MaterialBehaviour source) : base()
+    public MaterialBehaviour(MaterialBehaviour<T> source) : base()
     {
         propertyName = source.propertyName;
-        propertyType = source.propertyType;
-        intValue = source.intValue;
-        floatValue = source.floatValue;
-        texture = source.texture;
-        color = source.color;
-        tiling = source.tiling;
-        offset = source.offset;
-        vector = source.vector;
-        material = source.material;
-    }
-
-    /// <summary>
-    /// Set this behaviour's value from the given material
-    /// </summary>
-    public void ApplyFromMaterial(Material source)
-    {
-        if (!ShaderHasProperty(source.shader))
-            return;
-
-        switch (propertyType)
-        {
-            case Pt.Int:
-                intValue = source.GetInt(propertyName);
-                break;
-            case Pt.Float:
-                floatValue = source.GetFloat(propertyName);
-                break;
-            case Pt.Texture:
-                texture = source.GetTexture(propertyName);
-                break;
-            case Pt.Color:
-                color = source.GetColor(propertyName);
-                break;
-            case Pt.TextureTiling:
-                tiling = source.GetTextureScale(propertyName);
-                break;
-            case Pt.TextureOffset:
-                offset = source.GetTextureOffset(propertyName);
-                break;
-            case Pt.Vector:
-                vector = source.GetVector(propertyName);
-                break;
-            case Pt.Material:
-                material = new Material(source);
-                break;
-        }
+        value = source.value;
     }
 
     /// <summary>
@@ -111,80 +29,36 @@ public class MaterialBehaviour : PlayableBehaviour
     /// </summary>
     public void ApplyToMaterial(Material target)
     {
-        if (!ShaderHasProperty(target.shader))
-            return;
+        if (ShaderHasProperty(target.shader))
+            InnerApplyToMaterial(target);
+    }
 
-        switch (propertyType)
-        {
-            case Pt.Int:
-                target.SetInt(propertyName, intValue);
-                break;
-            case Pt.Float:
-                target.SetFloat(propertyName, floatValue);
-                break;
-            case Pt.Color:
-                target.SetColor(propertyName, color);
-                break;
-            case Pt.Texture:
-                target.SetTexture(propertyName, texture);
-                break;
-            case Pt.TextureTiling:
-                target.SetTextureScale(propertyName, tiling);
-                break;
-            case Pt.TextureOffset:
-                target.SetTextureOffset(propertyName, offset);
-                break;
-            case Pt.Vector:
-                target.SetVector(propertyName, vector);
-                break;
-            case Pt.Material:
-                if (material != null)
-                    target.CopyPropertiesFromMaterial(material);
-                break;
-        }
+    /// <summary>
+    /// Set this behaviour's value from the given material
+    /// </summary>
+    public void ApplyFromMaterial(Material source)
+    {
+        if (ShaderHasProperty(source.shader))
+            value = InnerApplyFromMaterial(source);
     }
 
     /// <summary>
     /// Apply the linear interpolation of <param name="a"/> and
-    /// <param name="b"/> to this behaviour
+    /// <param name="b"/> to this behavior
     /// </summary>
-    public void Lerp(MaterialBehaviour a, MaterialBehaviour b, float t)
-    {
-        switch (propertyType)
-        {
-            case Pt.Int:
-                intValue = (int)Mathf.Lerp(a.intValue, b.intValue, t);
-                break;
-            case Pt.Float:
-                floatValue = Mathf.Lerp(a.floatValue, b.floatValue, t);
-                break;
-            case Pt.Texture:
-                texture = a.texture;
-                break;
-            case Pt.Color:
-                color = Color.Lerp(a.color, b.color, t);
-                break;
-            case Pt.TextureTiling:
-                tiling = Vector2.Lerp(a.tiling, b.tiling, t);
-                break;
-            case Pt.TextureOffset:
-                offset = Vector2.Lerp(a.offset, b.offset, t);
-                break;
-            case Pt.Vector:
-                vector = Vector4.Lerp(a.vector, b.vector, t);
-                break;
-            case Pt.Material:
-                if (material != null && a.material != null && b.material != null)
-                    material.Lerp(a.material, b.material, t);
-                break;
-        }
-    }
+    public T Lerp(MaterialBehaviour<T> a, MaterialBehaviour<T> b, float t)
+        => value = InnerLerp(a.value, b.value, t);
+
+    protected abstract void InnerApplyToMaterial(Material target);
+    protected abstract T InnerApplyFromMaterial(Material source);
+    protected abstract T InnerLerp(T a, T b, float t);
+    protected abstract bool MatchesShaderProperty(Spt spt);
 
     /// <summary>
     /// Return true if the passed shader supports the property specified
     /// in this class
     /// </summary>
-    private bool ShaderHasProperty(Shader shader)
+    protected bool ShaderHasProperty(Shader shader)
     {
         int propertyIndex = shader.FindPropertyIndex(propertyName);
         if (propertyIndex < 0)
@@ -192,17 +66,135 @@ public class MaterialBehaviour : PlayableBehaviour
             return false;
 
         // Return true if found property has matching type
-        var t = shader.GetPropertyType(propertyIndex);
-        return propertyType switch
-        {
-            Pt.Int           => t == Spt.Float || t == Spt.Range,
-            Pt.Float         => t == Spt.Float || t == Spt.Range,
-            Pt.Color         => t == Spt.Color || t == Spt.Vector,
-            Pt.Vector        => t == Spt.Color || t == Spt.Vector,
-            Pt.Texture       => t == Spt.Texture,
-            Pt.TextureTiling => t == Spt.Texture,
-            Pt.TextureOffset => t == Spt.Texture,
-            _                => false,
-        };
+        return MatchesShaderProperty(shader.GetPropertyType(propertyIndex));
     }
+}
+
+[Serializable]
+public class IntMaterialBehaviour : MaterialBehaviour<int>
+{
+    protected override int InnerApplyFromMaterial(Material source)
+        => source.GetInt(propertyName);
+
+    protected override void InnerApplyToMaterial(Material target)
+        => target.SetInt(propertyName, value);
+
+    protected override int InnerLerp(int a, int b, float t)
+        => (int)Mathf.Lerp(a, b, t);
+
+    protected override bool MatchesShaderProperty(Spt a)
+        => a == Spt.Float || a == Spt.Range;
+}
+
+[Serializable]
+public class FloatMaterialBehaviour : MaterialBehaviour<float>
+{
+    protected override float InnerApplyFromMaterial(Material source)
+        => source.GetFloat(propertyName);
+
+    protected override void InnerApplyToMaterial(Material target)
+        => target.SetFloat(propertyName, value);
+
+    protected override float InnerLerp(float a, float b, float t)
+        => Mathf.Lerp(a, b, t);
+
+    protected override bool MatchesShaderProperty(Spt a)
+        => a == Spt.Float || a == Spt.Range;
+}
+
+[Serializable]
+public class TextureMaterialBehaviour : MaterialBehaviour<Texture>
+{
+    protected override Texture InnerApplyFromMaterial(Material source)
+        => source.GetTexture(propertyName);
+
+    protected override void InnerApplyToMaterial(Material target)
+        => target.SetTexture(propertyName, value);
+
+    protected override Texture InnerLerp(Texture a, Texture b, float t)
+        => t < .5f? a : b;
+
+    protected override bool MatchesShaderProperty(Spt a)
+        => a == Spt.Texture;
+}
+
+[Serializable]
+public class ColorMaterialBehaviour : MaterialBehaviour<Color>
+{
+    protected override Color InnerApplyFromMaterial(Material source)
+        => source.GetColor(propertyName);
+
+    protected override void InnerApplyToMaterial(Material target)
+        => target.SetColor(propertyName, value);
+
+    protected override Color InnerLerp(Color a, Color b, float t)
+        => Color.Lerp(a, b, t);
+
+    protected override bool MatchesShaderProperty(Spt a)
+        => a == Spt.Color || a == Spt.Vector;
+}
+
+[Serializable]
+public class VectorMaterialBehaviour : MaterialBehaviour<Vector2>
+{
+    protected override Vector2 InnerApplyFromMaterial(Material source)
+        => source.GetVector(propertyName);
+
+    protected override void InnerApplyToMaterial(Material target)
+        => target.SetVector(propertyName, value);
+
+    protected override Vector2 InnerLerp(Vector2 a, Vector2 b, float t)
+        => Vector2.Lerp(a, b, t);
+
+    protected override bool MatchesShaderProperty(Spt a)
+        => a == Spt.Color || a == Spt.Vector;
+}
+
+[Serializable]
+public class ScaleMaterialBehaviour : VectorMaterialBehaviour
+{
+    protected override Vector2 InnerApplyFromMaterial(Material source)
+        => source.GetTextureScale(propertyName);
+
+    protected override void InnerApplyToMaterial(Material target)
+        => target.SetTextureScale(propertyName, value);
+
+    protected override bool MatchesShaderProperty(Spt a)
+        => a == Spt.Texture;
+}
+
+[Serializable]
+public class OffsetMaterialBehaviour : VectorMaterialBehaviour
+{
+    protected override Vector2 InnerApplyFromMaterial(Material source)
+        => source.GetTextureOffset(propertyName);
+
+    protected override void InnerApplyToMaterial(Material target)
+        => target.SetTextureOffset(propertyName, value);
+
+    protected override bool MatchesShaderProperty(Spt a)
+        => a == Spt.Texture;
+}
+
+[Serializable]
+public class MaterialMaterialBehaviour : MaterialBehaviour<Material>
+{
+    protected override Material InnerApplyFromMaterial(Material source)
+        => new Material(source);
+
+    protected override void InnerApplyToMaterial(Material target)
+    {
+        if (value != null)
+            target.CopyPropertiesFromMaterial(value);
+    }
+
+    protected override Material InnerLerp(Material a, Material b, float t)
+    {
+        if (value != null && a != null && b != null)
+            value.Lerp(a, b, t);
+        return value;
+    }
+
+    protected override bool MatchesShaderProperty(Spt a)
+        => false;
 }

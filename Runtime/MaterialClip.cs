@@ -1,22 +1,16 @@
 ﻿using UnityEngine;
 using UnityEngine.Playables;
-using UnityEngine.Timeline;
 
-public class MaterialClip : PlayableAsset, ITimelineClipAsset
+/// <summary>
+/// This base class exists because a <see cref="PropertyDrawer"/> can't
+/// serialize generic types
+/// </summary>
+public abstract class MaterialClipBase : PlayableAsset {}
+
+public abstract class MaterialClip<T> : MaterialClipBase where T : class, IPlayableBehaviour, new()
 {
-    public MaterialBehaviour data = new MaterialBehaviour();
-
-    public ClipCaps clipCaps
-    {
-        get
-        {
-            if (data.propertyType == MaterialBehaviour.PropertyType.Texture)
-                return ClipCaps.Extrapolation;
-            else
-                return ClipCaps.Extrapolation | ClipCaps.Blending;
-        }
-    }
+    public T data = new T();
 
     public override Playable CreatePlayable(PlayableGraph graph, GameObject owner)
-        => ScriptPlayable<MaterialBehaviour>.Create(graph, data);
+        => ScriptPlayable<T>.Create(graph, data);
 }
