@@ -27,31 +27,19 @@ public abstract class MaterialBehaviour<T> : MaterialBehaviourBase
     /// <summary>
     /// Apply this behaviour's value to the passed material
     /// </summary>
-    public void ApplyToMaterial(Material target)
-    {
-        if (ShaderHasProperty(target.shader))
-            InnerApplyToMaterial(target);
-    }
+    public abstract void ToMaterial(T value, Material target);
 
     /// <summary>
     /// Set this behaviour's value from the given material
     /// </summary>
-    public void ApplyFromMaterial(Material source)
-    {
-        if (ShaderHasProperty(source.shader))
-            value = InnerApplyFromMaterial(source);
-    }
+    public abstract T FromMaterial(Material source);
 
     /// <summary>
     /// Apply the linear interpolation of <param name="a"/> and
     /// <param name="b"/> to this behavior
     /// </summary>
-    public T Lerp(MaterialBehaviour<T> a, MaterialBehaviour<T> b, float t)
-        => value = InnerLerp(a.value, b.value, t);
+    public abstract T Lerp(T a, T b, float t);
 
-    protected abstract void InnerApplyToMaterial(Material target);
-    protected abstract T InnerApplyFromMaterial(Material source);
-    protected abstract T InnerLerp(T a, T b, float t);
     protected abstract bool MatchesShaderProperty(Spt spt);
 
     /// <summary>
@@ -73,13 +61,13 @@ public abstract class MaterialBehaviour<T> : MaterialBehaviourBase
 [Serializable]
 public class IntMaterialBehaviour : MaterialBehaviour<int>
 {
-    protected override int InnerApplyFromMaterial(Material source)
+    public override int FromMaterial(Material source)
         => source.GetInt(propertyName);
 
-    protected override void InnerApplyToMaterial(Material target)
+    public override void ToMaterial(int value, Material target)
         => target.SetInt(propertyName, value);
 
-    protected override int InnerLerp(int a, int b, float t)
+    public override int Lerp(int a, int b, float t)
         => (int)Mathf.Lerp(a, b, t);
 
     protected override bool MatchesShaderProperty(Spt a)
@@ -89,13 +77,13 @@ public class IntMaterialBehaviour : MaterialBehaviour<int>
 [Serializable]
 public class FloatMaterialBehaviour : MaterialBehaviour<float>
 {
-    protected override float InnerApplyFromMaterial(Material source)
+    public override float FromMaterial(Material source)
         => source.GetFloat(propertyName);
 
-    protected override void InnerApplyToMaterial(Material target)
+    public override void ToMaterial(float value, Material target)
         => target.SetFloat(propertyName, value);
 
-    protected override float InnerLerp(float a, float b, float t)
+    public override float Lerp(float a, float b, float t)
         => Mathf.Lerp(a, b, t);
 
     protected override bool MatchesShaderProperty(Spt a)
@@ -105,13 +93,13 @@ public class FloatMaterialBehaviour : MaterialBehaviour<float>
 [Serializable]
 public class TextureMaterialBehaviour : MaterialBehaviour<Texture>
 {
-    protected override Texture InnerApplyFromMaterial(Material source)
+    public override Texture FromMaterial(Material source)
         => source.GetTexture(propertyName);
 
-    protected override void InnerApplyToMaterial(Material target)
+    public override void ToMaterial(Texture value, Material target)
         => target.SetTexture(propertyName, value);
 
-    protected override Texture InnerLerp(Texture a, Texture b, float t)
+    public override Texture Lerp(Texture a, Texture b, float t)
         => t < .5f? a : b;
 
     protected override bool MatchesShaderProperty(Spt a)
@@ -121,13 +109,13 @@ public class TextureMaterialBehaviour : MaterialBehaviour<Texture>
 [Serializable]
 public class ColorMaterialBehaviour : MaterialBehaviour<Color>
 {
-    protected override Color InnerApplyFromMaterial(Material source)
+    public override Color FromMaterial(Material source)
         => source.GetColor(propertyName);
 
-    protected override void InnerApplyToMaterial(Material target)
+    public override void ToMaterial(Color value, Material target)
         => target.SetColor(propertyName, value);
 
-    protected override Color InnerLerp(Color a, Color b, float t)
+    public override Color Lerp(Color a, Color b, float t)
         => Color.Lerp(a, b, t);
 
     protected override bool MatchesShaderProperty(Spt a)
@@ -137,13 +125,13 @@ public class ColorMaterialBehaviour : MaterialBehaviour<Color>
 [Serializable]
 public class VectorMaterialBehaviour : MaterialBehaviour<Vector2>
 {
-    protected override Vector2 InnerApplyFromMaterial(Material source)
+    public override Vector2 FromMaterial(Material source)
         => source.GetVector(propertyName);
 
-    protected override void InnerApplyToMaterial(Material target)
+    public override void ToMaterial(Vector2 value, Material target)
         => target.SetVector(propertyName, value);
 
-    protected override Vector2 InnerLerp(Vector2 a, Vector2 b, float t)
+    public override Vector2 Lerp(Vector2 a, Vector2 b, float t)
         => Vector2.Lerp(a, b, t);
 
     protected override bool MatchesShaderProperty(Spt a)
@@ -153,10 +141,10 @@ public class VectorMaterialBehaviour : MaterialBehaviour<Vector2>
 [Serializable]
 public class ScaleMaterialBehaviour : VectorMaterialBehaviour
 {
-    protected override Vector2 InnerApplyFromMaterial(Material source)
+    public override Vector2 FromMaterial(Material source)
         => source.GetTextureScale(propertyName);
 
-    protected override void InnerApplyToMaterial(Material target)
+    public override void ToMaterial(Vector2 value, Material target)
         => target.SetTextureScale(propertyName, value);
 
     protected override bool MatchesShaderProperty(Spt a)
@@ -166,10 +154,10 @@ public class ScaleMaterialBehaviour : VectorMaterialBehaviour
 [Serializable]
 public class OffsetMaterialBehaviour : VectorMaterialBehaviour
 {
-    protected override Vector2 InnerApplyFromMaterial(Material source)
+    public override Vector2 FromMaterial(Material source)
         => source.GetTextureOffset(propertyName);
 
-    protected override void InnerApplyToMaterial(Material target)
+    public override void ToMaterial(Vector2 value, Material target)
         => target.SetTextureOffset(propertyName, value);
 
     protected override bool MatchesShaderProperty(Spt a)
@@ -179,16 +167,16 @@ public class OffsetMaterialBehaviour : VectorMaterialBehaviour
 [Serializable]
 public class MaterialMaterialBehaviour : MaterialBehaviour<Material>
 {
-    protected override Material InnerApplyFromMaterial(Material source)
+    public override Material FromMaterial(Material source)
         => new Material(source);
 
-    protected override void InnerApplyToMaterial(Material target)
+    public override void ToMaterial(Material value, Material target)
     {
         if (value != null)
             target.CopyPropertiesFromMaterial(value);
     }
 
-    protected override Material InnerLerp(Material a, Material b, float t)
+    public override Material Lerp(Material a, Material b, float t)
     {
         if (value != null && a != null && b != null)
             value.Lerp(a, b, t);

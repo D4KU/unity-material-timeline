@@ -2,7 +2,7 @@
 using UnityEngine.Playables;
 using System.Linq;
 
-public class MaterialMixer : PlayableBehaviour
+public class MaterialMixer<T, U> : PlayableBehaviour where T : MaterialBehaviour<U>, new()
 {
     /// <summary>
     /// Material manipulated by the track
@@ -55,33 +55,53 @@ public class MaterialMixer : PlayableBehaviour
                           where playable.GetInputWeight(i) > 0f
                           select i;
 
-        // foreach (int i in activeClips)
-        // {
-        //     float clipWeight = playable.GetInputWeight(i);
-        //     var input = (ScriptPlayable<MaterialBehaviour>)
-        //         playable.GetInput(i);
-        //     MaterialBehaviour clipData = input.GetBehaviour();
-        //     MaterialBehaviour toApply = new MaterialBehaviour(clipData);
+        foreach (int i in activeClips)
+        {
+            float weight = playable.GetInputWeight(i);
+            T data = GetBehaviour(playable, i);
 
-        //     if (activeClips.Count() > 1)
-        //     {
-        //         // Mix with next clip
-        //         var nextInput = (ScriptPlayable<MaterialBehaviour>)
-        //             playable.GetInput(i + 1);
-        //         toApply.Lerp(nextInput.GetBehaviour(), clipData, clipWeight);
-        //     }
-        //     else
-        //     {
-        //         if (clipWeight < 1f)
-        //         {
-        //             // Mix with default Material
-        //             toApply.ApplyFromMaterial(defaultMaterial);
-        //             toApply.Lerp(toApply, clipData, clipWeight);
-        //         }
-        //     }
+            if (activeClips.Count() == 1)
+            {
+                if (weight < 1f)
+                {
+                    // Mix with default Material
+                    MixWithDefault(data, weight);
+                }
+                else
+                {
+                    data.ToMaterial(data.value, boundMaterial);
+                }
+            }
+            else
+            {
+                T next = GetBehaviour(playable, i + 1);
+                if (data.GetType() == next.GetType() &&
+                    data.propertyName == next.propertyName)
+                {
+                    // Mix with next clip
+                    U newValue = data.Lerp(next.value, data.value, weight);
+                    data.ToMaterial(newValue, boundMaterial);
+                }
+                else
+                {
+                    MixWithDefault(data, weight);
+                    MixWithDefault(next, weight);
+                }
+            }
 
-        //     toApply.ApplyToMaterial(boundMaterial);
-        //     return;
-        // }
+            return;
+        }
+    }
+
+    static T GetBehaviour(Playable playable, int inputPort)
+        => ((ScriptPlayable<T>)playable.GetInput(inputPort)).GetBehaviour();
+
+    void MixWithDefault(T behaviour, float weight)
+    {
+        U defaultValue = behaviour.FromMaterial(defaultMaterial);
+        U newValue = behaviour.Lerp(defaultValue, behaviour.value, weight);
+        behaviour.ToMaterial(newValue, boundMaterial);
     }
 }
+
+public class IntMaterialMixer : MaterialMixer<IntMaterialBehaviour, int> {}
