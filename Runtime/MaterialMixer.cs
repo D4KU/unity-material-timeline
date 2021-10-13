@@ -48,6 +48,8 @@ public class MaterialMixer : PlayableBehaviour
         if (inputCount == 0)
             return;
 
+        boundMaterial.CopyPropertiesFromMaterial(defaultMaterial);
+
         // Get clips contributing to the current frame (weight > 0)
         var activeClips = from i in Enumerable.Range(0, inputCount)
                           where playable.GetInputWeight(i) > 0f
@@ -55,34 +57,56 @@ public class MaterialMixer : PlayableBehaviour
 
         foreach (int i in activeClips)
         {
-            float clipWeight = playable.GetInputWeight(i);
-            var input = (ScriptPlayable<MaterialBehaviour>)
-                playable.GetInput(i);
-            MaterialBehaviour clipData = input.GetBehaviour();
-            MaterialBehaviour toApply = new MaterialBehaviour(clipData);
+            float weight = playable.GetInputWeight(i);
+            var data = GetBehaviour(playable, i);
+            var mix = new MaterialBehaviour(data);
 
-            if (activeClips.Count() > 1)
+            if (activeClips.Count() == 1)
             {
-                // Mix with next clip
-                var nextInput = (ScriptPlayable<MaterialBehaviour>)
-                    playable.GetInput(i + 1);
-                toApply.Lerp(nextInput.GetBehaviour(), clipData, clipWeight);
+                if (weight < 1f)
+                {
+                    // Mix clip with default material
+                    mix.ApplyFromMaterial(defaultMaterial);
+                    mix.Lerp(mix, data, weight);
+                }
             }
             else
             {
-                if (clipWeight < 1f)
+                // Two clips are blended
+                var next = GetBehaviour(playable, i + 1);
+                if (data.propertyType == next.propertyType &&
+                    data.propertyName == next.propertyName)
                 {
-                    // Mix with default Material
-                    toApply.ApplyFromMaterial(defaultMaterial);
-                    toApply.Lerp(toApply, clipData, clipWeight);
+                    // Properties of blended clips match.
+                    // Mix current clip with next clip.
+                    mix.Lerp(next, data, weight);
+                }
+                else
+                {
+                    // Properties of blended clips don't match.
+                    // Individually mix them them with default material and
+                    // apply them to bound material.
+
+                    // Next clip
+                    var mix2 = new MaterialBehaviour(next);
+                    mix2.ApplyFromMaterial(defaultMaterial);
+                    mix2.Lerp(next, mix2, weight);
+                    mix2.ApplyToMaterial(boundMaterial);
+
+                    // Current clip
+                    mix.ApplyFromMaterial(defaultMaterial);
+                    mix.Lerp(mix, data, weight);
                 }
             }
 
-            toApply.ApplyToMaterial(boundMaterial);
+            mix.ApplyToMaterial(boundMaterial);
             return;
         }
+    }
 
-        // No clip was found with weight > 0
-        boundMaterial.CopyPropertiesFromMaterial(defaultMaterial);
+    static MaterialBehaviour GetBehaviour(Playable playable, int inputPort)
+    {
+        var input = (ScriptPlayable<MaterialBehaviour>)playable.GetInput(inputPort);
+        return input.GetBehaviour();
     }
 }
