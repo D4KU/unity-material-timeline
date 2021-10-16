@@ -5,19 +5,24 @@ using System.Linq;
 public class MaterialMixer : PlayableBehaviour
 {
     /// <summary>
-    /// Material manipulated by the track
+    /// True for the mixer of the first track layer
     /// </summary>
-    private Material boundMaterial;
+    protected static bool frameClean = true;
 
     /// <summary>
-    /// Initial state before timeline executed
+    /// Material manipulated by the track
     /// </summary>
-    private Material defaultMaterial;
+    static Material boundMaterial;
+
+    /// <summary>
+    /// Material state before timeline initialized
+    /// </summary>
+    static Material defaultMaterial;
 
     /// <summary>
     /// Initialization helper
     /// </summary>
-    private bool firstFrameHappened;
+    static bool firstFrameHappened;
 
     public override void OnPlayableDestroy(Playable playable)
     {
@@ -37,24 +42,35 @@ public class MaterialMixer : PlayableBehaviour
         if (boundMaterial == null)
             return;
 
-        if (!firstFrameHappened)
-        {
-            // Save original value
-            defaultMaterial = new Material(boundMaterial);
-            firstFrameHappened = true;
-        }
-
         int inputCount = playable.GetInputCount();
         if (inputCount == 0)
             return;
 
-        boundMaterial.CopyPropertiesFromMaterial(defaultMaterial);
+        if (frameClean)
+        {
+            // this mixer is mixing the first track layer
+            frameClean = false;
+
+            if (firstFrameHappened)
+            {
+                // Reset bound material
+                boundMaterial.CopyPropertiesFromMaterial(defaultMaterial);
+            }
+            else
+            {
+                // Save original value
+                defaultMaterial = new Material(boundMaterial);
+                firstFrameHappened = true;
+            }
+        }
 
         // Get clips contributing to the current frame (weight > 0)
         var activeClips = from i in Enumerable.Range(0, inputCount)
                           where playable.GetInputWeight(i) > 0f
                           select i;
 
+        // As long as a valid LayerMixer exists, there can be at most two
+        // active clips at one specific frame
         foreach (int i in activeClips)
         {
             float weight = playable.GetInputWeight(i);
@@ -66,7 +82,7 @@ public class MaterialMixer : PlayableBehaviour
                 if (weight < 1f)
                 {
                     // Mix clip with default material
-                    mix.ApplyFromMaterial(defaultMaterial);
+                    mix.ApplyFromMaterial(boundMaterial);
                     mix.Lerp(mix, data, weight);
                 }
             }
@@ -74,6 +90,7 @@ public class MaterialMixer : PlayableBehaviour
             {
                 // Two clips are blended
                 var next = GetBehaviour(playable, i + 1);
+
                 if (data.propertyType == next.propertyType &&
                     data.propertyName == next.propertyName)
                 {
@@ -84,17 +101,16 @@ public class MaterialMixer : PlayableBehaviour
                 else
                 {
                     // Properties of blended clips don't match.
-                    // Individually mix them them with default material and
-                    // apply them to bound material.
+                    // Individually mix them them with bound material
 
                     // Next clip
                     var mix2 = new MaterialBehaviour(next);
-                    mix2.ApplyFromMaterial(defaultMaterial);
+                    mix2.ApplyFromMaterial(boundMaterial);
                     mix2.Lerp(next, mix2, weight);
                     mix2.ApplyToMaterial(boundMaterial);
 
                     // Current clip
-                    mix.ApplyFromMaterial(defaultMaterial);
+                    mix.ApplyFromMaterial(boundMaterial);
                     mix.Lerp(mix, data, weight);
                 }
             }
@@ -105,8 +121,6 @@ public class MaterialMixer : PlayableBehaviour
     }
 
     static MaterialBehaviour GetBehaviour(Playable playable, int inputPort)
-    {
-        var input = (ScriptPlayable<MaterialBehaviour>)playable.GetInput(inputPort);
-        return input.GetBehaviour();
-    }
+        => ((ScriptPlayable<MaterialBehaviour>)playable.GetInput(inputPort))
+           .GetBehaviour();
 }
