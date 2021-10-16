@@ -4,8 +4,6 @@ using System;
 using Spt = UnityEngine.Rendering.ShaderPropertyType;
 using Pt = MaterialBehaviour.PropertyType;
 
-// TODO Only store the values used.
-// Create a clip for each property type?
 [Serializable]
 public class MaterialBehaviour : PlayableBehaviour
 {
@@ -23,7 +21,7 @@ public class MaterialBehaviour : PlayableBehaviour
     private const string TOOLTIP = "New value of the shader property";
 
     [Tooltip("The shader property to manipulate (e.g. '_BaseColor')")]
-    public string propertyName;
+    public string propertyName = "";
 
     [Tooltip("Type of the shader property to manipulate")]
     public PropertyType propertyType;
