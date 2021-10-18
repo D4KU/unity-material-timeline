@@ -22,7 +22,7 @@ public class MaterialTrack : TrackAsset, ILayerable
         // Set display name of each clip
         foreach (TimelineClip clip in GetClips())
         {
-            MaterialBehaviour data = ((MaterialClip)clip.asset).data;
+            MaterialBehaviour data = ((MaterialClip)clip.asset).template;
             clip.displayName = $"{data.propertyName} [{data.propertyType}]";
         }
         return ScriptPlayable<MaterialMixer>.Create(graph, inputCount);

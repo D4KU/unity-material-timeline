@@ -4,13 +4,13 @@ using UnityEngine.Timeline;
 
 public class MaterialClip : PlayableAsset, ITimelineClipAsset
 {
-    public MaterialBehaviour data = new MaterialBehaviour();
+    public MaterialBehaviour template = new MaterialBehaviour();
 
     public ClipCaps clipCaps
     {
         get
         {
-            if (data.propertyType == MaterialBehaviour.PropertyType.Texture)
+            if (template.propertyType == MaterialBehaviour.PropertyType.Texture)
                 return ClipCaps.Extrapolation;
             else
                 return ClipCaps.Extrapolation | ClipCaps.Blending;
@@ -18,5 +18,5 @@ public class MaterialClip : PlayableAsset, ITimelineClipAsset
     }
 
     public override Playable CreatePlayable(PlayableGraph graph, GameObject owner)
-        => ScriptPlayable<MaterialBehaviour>.Create(graph, data);
+        => ScriptPlayable<MaterialBehaviour>.Create(graph, template);
 }
