@@ -1,7 +1,12 @@
 using UnityEngine.Playables;
 
-public class MaterialLayerMixer : MaterialMixer
+public class MaterialLayerMixer : PlayableBehaviour
 {
+    /// <summary>
+    /// True for the mixer of the first track layer
+    /// </summary>
+    public static bool frameClean = true;
+
     public override void ProcessFrame(
         Playable playable,
         FrameData info,
@@ -10,6 +15,6 @@ public class MaterialLayerMixer : MaterialMixer
         // The layer mixer is executed after all track layer mixers.
         // All that is left to do is to tell the first mixer of the next
         // frame that it's the first one
-        MaterialMixer.frameClean = true;
+        MaterialLayerMixer.frameClean = true;
     }
 }

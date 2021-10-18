@@ -5,11 +5,6 @@ using System.Linq;
 public class MaterialMixer : PlayableBehaviour
 {
     /// <summary>
-    /// True for the mixer of the first track layer
-    /// </summary>
-    protected static bool frameClean = true;
-
-    /// <summary>
     /// Material manipulated by the track
     /// </summary>
     static Material boundMaterial;
@@ -46,10 +41,10 @@ public class MaterialMixer : PlayableBehaviour
         if (inputCount == 0)
             return;
 
-        if (frameClean)
+        if (MaterialLayerMixer.frameClean)
         {
             // this mixer is mixing the first track layer
-            frameClean = false;
+            MaterialLayerMixer.frameClean = false;
 
             if (firstFrameHappened)
             {
