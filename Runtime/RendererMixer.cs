@@ -27,54 +27,60 @@ public class RendererMixer : PlayableBehaviour
         if (inputCount == 0)
             return;
 
-        var block = new MaterialPropertyBlock();
-        bool firstMixer = MaterialLayerMixer.frameClean;
+        int materialCount = boundRenderer.sharedMaterials.Length;
+        if (materialCount == 0)
+            return;
 
+        bool firstMixer = MaterialLayerMixer.frameClean;
         if (firstMixer)
         {
             // this mixer is mixing the first track layer
             MaterialLayerMixer.frameClean = false;
-
-            if (oldMaterialIndex != materialIndex)
-            {
-                SetPropertyBlock(null, oldMaterialIndex);
-                oldMaterialIndex = materialIndex;
-            }
-
-            // Reset renderer
-            SetPropertyBlock(null, materialIndex);
-        }
-        else
-        {
-            GetPropertyBlock(block);
+            ClearSlots();
         }
 
         // Get clips contributing to the current frame (weight > 0)
-        var activeClips = from i in Enumerable.Range(0, inputCount)
-                          where playable.GetInputWeight(i) > 0f
-                          select i;
+        int[] activeClips = (from i in Enumerable.Range(0, inputCount)
+                             where playable.GetInputWeight(i) > 0f
+                             select i).ToArray();
+        if (activeClips.Length == 0)
+            return;
 
-        // As long as a valid LayerMixer exists, there can be at most two
-        // active clips at one specific frame
-        foreach (int i in activeClips)
+        int clipIndex = activeClips[0];
+        float weight = playable.GetInputWeight(clipIndex);
+        MaterialBehaviour data = GetBehaviour(playable, clipIndex);
+        var blocks = new MaterialPropertyBlock[materialCount];
+        int start = 0;
+        int end = materialCount;
+
+        if (IsMaterialIndexValid(materialIndex))
         {
-            float weight = playable.GetInputWeight(i);
-            var data = GetBehaviour(playable, i);
-            var mix = new MaterialBehaviour(data);
+            start = materialIndex;
+            end   = materialIndex + 1;
+        }
 
-            if (activeClips.Count() == 1)
+        for (int slotIndex = start; slotIndex < end; slotIndex++)
+        {
+            var mix = new MaterialBehaviour(data);
+            var block = new MaterialPropertyBlock();
+            if (!firstMixer)
+                boundRenderer.GetPropertyBlock(block, slotIndex);
+
+            if (activeClips.Length == 1)
             {
                 if (weight < 1f)
                 {
                     // Mix clip into block
-                    ApplyToBehaviour(mix, block, firstMixer);
+                    ApplyToBehaviour(mix, block, slotIndex, firstMixer);
                     mix.Lerp(mix, data, weight);
                 }
             }
             else
             {
-                // Two clips are blended
-                var next = GetBehaviour(playable, i + 1);
+                // Two clips are blended.
+                // As long as a valid LayerMixer exists, there can be at most
+                // two active clips at one specific frame.
+                var next = GetBehaviour(playable, clipIndex + 1);
 
                 if (data.propertyType == next.propertyType &&
                     data.propertyName == next.propertyName)
@@ -90,21 +96,19 @@ public class RendererMixer : PlayableBehaviour
 
                     // Next clip
                     var mix2 = new MaterialBehaviour(next);
-                    ApplyToBehaviour(mix2, block, firstMixer);
+                    ApplyToBehaviour(mix2, block, slotIndex, firstMixer);
                     mix2.Lerp(next, mix2, weight);
                     mix2.ApplyToPropertyBlock(block);
 
                     // Current clip
-                    ApplyToBehaviour(mix, block, firstMixer);
+                    ApplyToBehaviour(mix, block, slotIndex, firstMixer);
                     mix.Lerp(mix, data, weight);
                 }
             }
 
             mix.ApplyToPropertyBlock(block);
-            break;
+            boundRenderer.SetPropertyBlock(block, slotIndex);
         }
-
-        SetPropertyBlock(block, materialIndex);
     }
 
     static MaterialBehaviour GetBehaviour(Playable playable, int inputPort)
@@ -116,42 +120,54 @@ public class RendererMixer : PlayableBehaviour
            index >= 0 &&
            index < boundRenderer.sharedMaterials.Length;
 
-    void GetPropertyBlock(MaterialPropertyBlock block)
-    {
-        if (boundRenderer == null)
-            return;
-
-        if (IsMaterialIndexValid(materialIndex))
-            boundRenderer.GetPropertyBlock(block, materialIndex);
-        else
-            boundRenderer.GetPropertyBlock(block);
-    }
-
-    void SetPropertyBlock(MaterialPropertyBlock block, int materialIndex)
-    {
-        if (boundRenderer == null)
-            return;
-
-        if (IsMaterialIndexValid(materialIndex))
-            boundRenderer.SetPropertyBlock(block, materialIndex);
-        else
-            boundRenderer.SetPropertyBlock(block);
-    }
-
     void ApplyToBehaviour(
         MaterialBehaviour mix,
         MaterialPropertyBlock block,
+        int materialIndex,
         bool firstMixer)
     {
-        Material[] materials = boundRenderer.sharedMaterials;
-        Material boundMaterial = null;
-
-        if (IsMaterialIndexValid(materialIndex))
-            boundMaterial = materials[materialIndex];
-
-        if (firstMixer && boundMaterial != null)
-            mix.ApplyFromMaterial(boundMaterial);
+        if (firstMixer)
+        {
+            Material material = boundRenderer.sharedMaterials[materialIndex];
+            if (material != null)
+                mix.ApplyFromMaterial(material);
+        }
         else
+        {
             mix.ApplyFromPropertyBlock(block);
+        }
+    }
+
+    void ClearSlots()
+    {
+        if (oldMaterialIndex == materialIndex)
+        {
+            if (IsMaterialIndexValid(materialIndex))
+                boundRenderer.SetPropertyBlock(null, materialIndex);
+            else
+                ClearAllSlots();
+        }
+        else
+        {
+            if (IsMaterialIndexValid(materialIndex) &&
+                IsMaterialIndexValid(oldMaterialIndex))
+            {
+                boundRenderer.SetPropertyBlock(null, materialIndex);
+                boundRenderer.SetPropertyBlock(null, oldMaterialIndex);
+            }
+            else
+            {
+                ClearAllSlots();
+            }
+
+            oldMaterialIndex = materialIndex;
+        }
+    }
+
+    void ClearAllSlots()
+    {
+        int materialCount = boundRenderer.sharedMaterials.Length;
+        for (int i = 0; i < materialCount; i++)
+            boundRenderer.SetPropertyBlock(null, i);
     }
 }
