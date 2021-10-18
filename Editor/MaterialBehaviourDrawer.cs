@@ -41,7 +41,7 @@ public class MaterialBehaviourDrawer : PropertyDrawer
 
         string valuePropName = propType switch
         {
-            PropertyType.Int => "intValue",
+            PropertyType.Integer => "intValue",
             PropertyType.Float => "floatValue",
             PropertyType.Color => "color",
             PropertyType.Texture => "texture",

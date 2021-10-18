@@ -9,7 +9,7 @@ public class MaterialBehaviour : PlayableBehaviour
 {
     public enum PropertyType
     {
-        Int,
+        Integer,
         Float,
         Texture,
         TextureTiling,
@@ -77,7 +77,7 @@ public class MaterialBehaviour : PlayableBehaviour
 
         switch (propertyType)
         {
-            case Pt.Int:
+            case Pt.Integer:
                 intValue = source.GetInt(propertyName);
                 break;
             case Pt.Float:
@@ -114,7 +114,7 @@ public class MaterialBehaviour : PlayableBehaviour
 
         switch (propertyType)
         {
-            case Pt.Int:
+            case Pt.Integer:
                 target.SetInt(propertyName, intValue);
                 break;
             case Pt.Float:
@@ -150,7 +150,7 @@ public class MaterialBehaviour : PlayableBehaviour
     {
         switch (propertyType)
         {
-            case Pt.Int:
+            case Pt.Integer:
                 intValue = (int)Mathf.Lerp(a.intValue, b.intValue, t);
                 break;
             case Pt.Float:
@@ -178,6 +178,54 @@ public class MaterialBehaviour : PlayableBehaviour
         }
     }
 
+    public void ApplyFromPropertyBlock(MaterialPropertyBlock source)
+    {
+        switch (propertyType)
+        {
+            case Pt.Integer:
+                intValue = source.GetInt(propertyName);
+                break;
+            case Pt.Float:
+                floatValue = source.GetFloat(propertyName);
+                break;
+            case Pt.Texture:
+                texture = source.GetTexture(propertyName);
+                break;
+            case Pt.Color:
+                color = source.GetColor(propertyName);
+                break;
+            case Pt.Vector:
+                vector = source.GetVector(propertyName);
+                break;
+            default:
+                throw new System.ArgumentException();
+        }
+    }
+
+    public void ApplyToPropertyBlock(MaterialPropertyBlock target)
+    {
+        switch (propertyType)
+        {
+            case Pt.Integer:
+                target.SetInt(propertyName, intValue);
+                break;
+            case Pt.Float:
+                target.SetFloat(propertyName, floatValue);
+                break;
+            case Pt.Color:
+                target.SetColor(propertyName, color);
+                break;
+            case Pt.Texture:
+                target.SetTexture(propertyName, texture);
+                break;
+            case Pt.Vector:
+                target.SetVector(propertyName, vector);
+                break;
+            default:
+                throw new System.ArgumentException();
+        }
+    }
+
     /// <summary>
     /// Return true if the passed shader supports the property specified
     /// in this class
@@ -193,7 +241,7 @@ public class MaterialBehaviour : PlayableBehaviour
         var t = shader.GetPropertyType(propertyIndex);
         return propertyType switch
         {
-            Pt.Int           => t == Spt.Float || t == Spt.Range,
+            Pt.Integer       => t == Spt.Float || t == Spt.Range,
             Pt.Float         => t == Spt.Float || t == Spt.Range,
             Pt.Color         => t == Spt.Color || t == Spt.Vector,
             Pt.Vector        => t == Spt.Color || t == Spt.Vector,
