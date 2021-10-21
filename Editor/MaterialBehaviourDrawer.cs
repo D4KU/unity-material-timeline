@@ -1,8 +1,7 @@
 using UnityEditor;
 using UnityEngine;
 using System;
-
-using PropertyType = MaterialBehaviour.PropertyType;
+using System.Linq;
 
 [CustomPropertyDrawer(typeof(MaterialBehaviour))]
 public class MaterialBehaviourDrawer : PropertyDrawer
@@ -14,7 +13,7 @@ public class MaterialBehaviourDrawer : PropertyDrawer
     public override float GetPropertyHeight(
             SerializedProperty property,
             GUIContent label)
-        => 7 * LineHeight;
+        => EditorGUIUtility.singleLineHeight;
 
     public override void OnGUI(
             Rect position,
@@ -27,32 +26,50 @@ public class MaterialBehaviourDrawer : PropertyDrawer
             position.width,
             EditorGUIUtility.singleLineHeight);
 
-        var typeProp = property.FindPropertyRelative("propertyType");
-        EditorGUI.PropertyField(singleFieldRect, typeProp);
-        singleFieldRect.y += LineHeight;
+        var prefixLabel = EditorGUI.PrefixLabel(
+            singleFieldRect,
+            new GUIContent("Property"));
 
-        var propType = (PropertyType)typeProp.enumValueIndex;
-        if (propType != PropertyType.Material)
+        object targetObject = property.serializedObject.targetObject;
+        var target = (MaterialBehaviour)fieldInfo.GetValue(targetObject);
+
+        if (EditorGUI.DropdownButton(
+            prefixLabel,
+            new GUIContent(target.propertyName),
+            FocusType.Passive))
         {
-            var nameProp = property.FindPropertyRelative("propertyName");
-            EditorGUI.PropertyField(singleFieldRect, nameProp);
-            singleFieldRect.y += LineHeight;
+            Material[] affectedMaterials = target.mixer.AffectedMaterials;
+            var props = MaterialEditor.GetMaterialProperties(affectedMaterials);
+
+            Action<string> OnSelectionChanged = entry =>
+            {
+                target.propertyName = entry;
+                foreach (Material mat in affectedMaterials)
+                {
+                    Shader shader = mat.shader;
+                    int propIndex = shader.FindPropertyIndex(entry);
+                    if (propIndex < 0)
+                        // Shader doesn't have any property with selected name
+                        continue;
+
+                    target.propertyType = shader.GetPropertyType(propIndex);
+                    break;
+                }
+            };
+
+            var treeView = new StringTreeView(
+                props.Select(i => i.name),
+                OnSelectionChanged);
+
+            var treeViewPopup = new TreeViewPopupWindow(treeView)
+            {
+                Width = prefixLabel.width
+            };
+            PopupWindow.Show(prefixLabel, treeViewPopup);
         }
 
-        string valuePropName = propType switch
-        {
-            PropertyType.Integer => "intValue",
-            PropertyType.Float => "floatValue",
-            PropertyType.Color => "color",
-            PropertyType.Texture => "texture",
-            PropertyType.TextureTiling => "tiling",
-            PropertyType.TextureOffset => "offset",
-            PropertyType.Vector => "vector",
-            PropertyType.Material => "material",
-            _ => throw new ArgumentOutOfRangeException(),
-        };
-
-        var valueProp = property.FindPropertyRelative(valuePropName);
-        EditorGUI.PropertyField(singleFieldRect, valueProp, true);
+        var valueProp = property.FindPropertyRelative(target.FieldName);
+        if (valueProp != null)
+            EditorGUILayout.PropertyField(valueProp, new GUIContent("Value"));
     }
 }

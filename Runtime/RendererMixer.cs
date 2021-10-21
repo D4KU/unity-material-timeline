@@ -6,13 +6,40 @@ using System.Linq;
 public class RendererMixer : PlayableBehaviour
 {
     const int DEFAULT_MATERIAL_INDEX = -1;
-    static int oldMaterialIndex = DEFAULT_MATERIAL_INDEX;
+
+    /// <summary>
+    /// If non-negative, specifies one of the bound renderer's materials
+    /// to override exclusively.
+    /// If negative, all materials are overridden.
+    /// </summary>
     public int materialIndex = DEFAULT_MATERIAL_INDEX;
+
+    /// <summary>
+    /// Helper to notice when user changes serialized material index.
+    /// </summary>
+    int oldMaterialIndex = DEFAULT_MATERIAL_INDEX;
 
     /// <summary>
     /// Renderer manipulated by the track
     /// </summary>
-    static Renderer boundRenderer;
+    Renderer boundRenderer;
+
+    public Material[] AffectedMaterials
+    {
+        get
+        {
+            if (boundRenderer == null)
+                return new Material[0];
+
+            if (IsMaterialIndexValid(materialIndex))
+                return new Material[]
+                {
+                    boundRenderer.sharedMaterials[materialIndex]
+                };
+
+            return boundRenderer.sharedMaterials;
+        }
+    }
 
     public override void ProcessFrame(
         Playable playable,
@@ -116,9 +143,7 @@ public class RendererMixer : PlayableBehaviour
            .GetBehaviour();
 
     bool IsMaterialIndexValid(int index)
-        => boundRenderer != null &&
-           index >= 0 &&
-           index < boundRenderer.sharedMaterials.Length;
+        => index >= 0 && index < boundRenderer.sharedMaterials.Length;
 
     void ApplyToBehaviour(
         MaterialBehaviour mix,

@@ -2,44 +2,25 @@
 using UnityEngine;
 using System;
 using Spt = UnityEngine.Rendering.ShaderPropertyType;
-using Pt = MaterialBehaviour.PropertyType;
 
 [Serializable]
 public class MaterialBehaviour : PlayableBehaviour
 {
-    public enum PropertyType
-    {
-        Integer,
-        Float,
-        Texture,
-        TextureTiling,
-        TextureOffset,
-        Color,
-        Vector,
-        Material,
-    }
     private const string TOOLTIP = "New value of the shader property";
+
+    public RendererMixer mixer;
 
     [Tooltip("The shader property to manipulate (e.g. '_BaseColor')")]
     public string propertyName = "";
 
     [Tooltip("Type of the shader property to manipulate")]
-    public PropertyType propertyType;
+    public Spt propertyType = Spt.Float;
 
     [Tooltip(TOOLTIP)]
-    public int intValue;
-
-    [Tooltip(TOOLTIP)]
-    public float floatValue;
+    public float number;
 
     [Tooltip(TOOLTIP)]
     public Texture texture;
-
-    [Tooltip(TOOLTIP)]
-    public Vector2 tiling;
-
-    [Tooltip(TOOLTIP)]
-    public Vector2 offset;
 
     [Tooltip(TOOLTIP)]
     public Color color;
@@ -51,18 +32,23 @@ public class MaterialBehaviour : PlayableBehaviour
             "found in this material")]
     public Material material;
 
+    public string FieldName => propertyType switch
+    {
+        Spt.Color   => nameof(color),
+        Spt.Texture => nameof(texture),
+        Spt.Vector  => nameof(vector),
+        _           => nameof(number)
+    };
+
     public MaterialBehaviour() : base() {}
 
     public MaterialBehaviour(MaterialBehaviour source) : base()
     {
         propertyName = source.propertyName;
         propertyType = source.propertyType;
-        intValue = source.intValue;
-        floatValue = source.floatValue;
+        number = source.number;
         texture = source.texture;
         color = source.color;
-        tiling = source.tiling;
-        offset = source.offset;
         vector = source.vector;
         material = source.material;
     }
@@ -72,35 +58,29 @@ public class MaterialBehaviour : PlayableBehaviour
     /// </summary>
     public void ApplyFromMaterial(Material source)
     {
-        if (!ShaderHasProperty(source.shader))
+        if (!source.HasProperty(Shader.PropertyToID(propertyName)))
             return;
 
         switch (propertyType)
         {
-            case Pt.Integer:
-                intValue = source.GetInt(propertyName);
+            case Spt.Float:
+            case Spt.Range:
+                number = source.GetFloat(propertyName);
                 break;
-            case Pt.Float:
-                floatValue = source.GetFloat(propertyName);
-                break;
-            case Pt.Texture:
+            case Spt.Texture:
                 texture = source.GetTexture(propertyName);
                 break;
-            case Pt.Color:
+            case Spt.Color:
                 color = source.GetColor(propertyName);
                 break;
-            case Pt.TextureTiling:
-                tiling = source.GetTextureScale(propertyName);
-                break;
-            case Pt.TextureOffset:
-                offset = source.GetTextureOffset(propertyName);
-                break;
-            case Pt.Vector:
+            case Spt.Vector:
                 vector = source.GetVector(propertyName);
                 break;
-            case Pt.Material:
-                material = new Material(source);
-                break;
+            default:
+                throw new ArgumentException();
+            // case Spt.Material:
+            //     material = new Material(source);
+            //     break;
         }
     }
 
@@ -109,36 +89,31 @@ public class MaterialBehaviour : PlayableBehaviour
     /// </summary>
     public void ApplyToMaterial(Material target)
     {
-        if (!ShaderHasProperty(target.shader))
+        if (!target.HasProperty(Shader.PropertyToID(propertyName)))
             return;
 
         switch (propertyType)
         {
-            case Pt.Integer:
-                target.SetInt(propertyName, intValue);
+            case Spt.Float:
+            case Spt.Range:
+                target.SetFloat(propertyName, number);
                 break;
-            case Pt.Float:
-                target.SetFloat(propertyName, floatValue);
-                break;
-            case Pt.Color:
+            case Spt.Color:
                 target.SetColor(propertyName, color);
                 break;
-            case Pt.Texture:
-                target.SetTexture(propertyName, texture);
+            case Spt.Texture:
+                if (texture != null)
+                    target.SetTexture(propertyName, texture);
                 break;
-            case Pt.TextureTiling:
-                target.SetTextureScale(propertyName, tiling);
-                break;
-            case Pt.TextureOffset:
-                target.SetTextureOffset(propertyName, offset);
-                break;
-            case Pt.Vector:
+            case Spt.Vector:
                 target.SetVector(propertyName, vector);
                 break;
-            case Pt.Material:
-                if (material != null)
-                    target.CopyPropertiesFromMaterial(material);
-                break;
+            default:
+                throw new ArgumentException();
+            // case Spt.Material:
+            //     if (material != null)
+            //         target.CopyPropertiesFromMaterial(material);
+            //     break;
         }
     }
 
@@ -150,31 +125,25 @@ public class MaterialBehaviour : PlayableBehaviour
     {
         switch (propertyType)
         {
-            case Pt.Integer:
-                intValue = (int)Mathf.Lerp(a.intValue, b.intValue, t);
+            case Spt.Float:
+            case Spt.Range:
+                number = Mathf.Lerp(a.number, b.number, t);
                 break;
-            case Pt.Float:
-                floatValue = Mathf.Lerp(a.floatValue, b.floatValue, t);
-                break;
-            case Pt.Texture:
+            case Spt.Texture:
                 texture = a.texture;
                 break;
-            case Pt.Color:
+            case Spt.Color:
                 color = Color.Lerp(a.color, b.color, t);
                 break;
-            case Pt.TextureTiling:
-                tiling = Vector2.Lerp(a.tiling, b.tiling, t);
-                break;
-            case Pt.TextureOffset:
-                offset = Vector2.Lerp(a.offset, b.offset, t);
-                break;
-            case Pt.Vector:
+            case Spt.Vector:
                 vector = Vector4.Lerp(a.vector, b.vector, t);
                 break;
-            case Pt.Material:
-                if (material != null && a.material != null && b.material != null)
-                    material.Lerp(a.material, b.material, t);
-                break;
+            default:
+                throw new ArgumentException();
+            // case Spt.Material:
+            //     if (material != null && a.material != null && b.material != null)
+            //         material.Lerp(a.material, b.material, t);
+            //     break;
         }
     }
 
@@ -182,23 +151,21 @@ public class MaterialBehaviour : PlayableBehaviour
     {
         switch (propertyType)
         {
-            case Pt.Integer:
-                intValue = source.GetInt(propertyName);
+            case Spt.Float:
+            case Spt.Range:
+                number = source.GetFloat(propertyName);
                 break;
-            case Pt.Float:
-                floatValue = source.GetFloat(propertyName);
-                break;
-            case Pt.Texture:
+            case Spt.Texture:
                 texture = source.GetTexture(propertyName);
                 break;
-            case Pt.Color:
+            case Spt.Color:
                 color = source.GetColor(propertyName);
                 break;
-            case Pt.Vector:
+            case Spt.Vector:
                 vector = source.GetVector(propertyName);
                 break;
             default:
-                throw new System.ArgumentException();
+                throw new ArgumentException();
         }
     }
 
@@ -206,49 +173,22 @@ public class MaterialBehaviour : PlayableBehaviour
     {
         switch (propertyType)
         {
-            case Pt.Integer:
-                target.SetInt(propertyName, intValue);
+            case Spt.Float:
+            case Spt.Range:
+                target.SetFloat(propertyName, number);
                 break;
-            case Pt.Float:
-                target.SetFloat(propertyName, floatValue);
-                break;
-            case Pt.Color:
+            case Spt.Color:
                 target.SetColor(propertyName, color);
                 break;
-            case Pt.Texture:
-                target.SetTexture(propertyName, texture);
+            case Spt.Texture:
+                if (texture != null)
+                    target.SetTexture(propertyName, texture);
                 break;
-            case Pt.Vector:
+            case Spt.Vector:
                 target.SetVector(propertyName, vector);
                 break;
             default:
-                throw new System.ArgumentException();
+                throw new ArgumentException();
         }
-    }
-
-    /// <summary>
-    /// Return true if the passed shader supports the property specified
-    /// in this class
-    /// </summary>
-    private bool ShaderHasProperty(Shader shader)
-    {
-        int propertyIndex = shader.FindPropertyIndex(propertyName);
-        if (propertyIndex < 0)
-            // Passed shader doesn't have any property with entered name
-            return false;
-
-        // Return true if found property has matching type
-        var t = shader.GetPropertyType(propertyIndex);
-        return propertyType switch
-        {
-            Pt.Integer       => t == Spt.Float || t == Spt.Range,
-            Pt.Float         => t == Spt.Float || t == Spt.Range,
-            Pt.Color         => t == Spt.Color || t == Spt.Vector,
-            Pt.Vector        => t == Spt.Color || t == Spt.Vector,
-            Pt.Texture       => t == Spt.Texture,
-            Pt.TextureTiling => t == Spt.Texture,
-            Pt.TextureOffset => t == Spt.Texture,
-            _                => false,
-        };
     }
 }

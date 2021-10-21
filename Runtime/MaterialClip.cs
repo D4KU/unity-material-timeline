@@ -10,7 +10,7 @@ public class MaterialClip : PlayableAsset, ITimelineClipAsset
     {
         get
         {
-            if (template.propertyType == MaterialBehaviour.PropertyType.Texture)
+            if (template.propertyType == UnityEngine.Rendering.ShaderPropertyType.Texture)
                 return ClipCaps.Extrapolation;
             else
                 return ClipCaps.Extrapolation | ClipCaps.Blending;

@@ -21,13 +21,19 @@ public class RendererTrack : TrackAsset, ILayerable
     public override Playable CreateTrackMixer(
         PlayableGraph graph, GameObject go, int inputCount)
     {
+        var playable = ScriptPlayable<RendererMixer>.Create(graph, template, inputCount);
+        var mixer = playable.GetBehaviour();
+
         // Set display name of each clip
         foreach (TimelineClip clip in GetClips())
         {
             MaterialBehaviour data = ((MaterialClip)clip.asset).template;
             clip.displayName = $"{data.propertyName} [{data.propertyType}]";
+
+            // Set mixer
+            data.mixer = mixer;
         }
-        return ScriptPlayable<RendererMixer>.Create(graph, template, inputCount);
+        return playable;
     }
 
 #if UNITY_EDITOR
