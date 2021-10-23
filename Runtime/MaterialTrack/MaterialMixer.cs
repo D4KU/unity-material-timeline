@@ -1,23 +1,34 @@
 ﻿using UnityEngine;
 using UnityEngine.Playables;
 using System.Linq;
+using System.Collections.Generic;
 
-public class MaterialMixer : PlayableBehaviour
+public class MaterialMixer : PlayableBehaviour, IMaterialProvider
 {
     /// <summary>
     /// Material manipulated by the track
     /// </summary>
-    static Material boundMaterial;
+    Material boundMaterial;
 
     /// <summary>
     /// Material state before timeline initialized
     /// </summary>
-    static Material defaultMaterial;
+    Material defaultMaterial;
 
     /// <summary>
     /// Initialization helper
     /// </summary>
-    static bool firstFrameHappened;
+    bool firstFrameHappened;
+
+    public IEnumerable<Material> Materials
+    {
+        get
+        {
+            if (boundMaterial == null)
+                return new Material[0];
+            return new Material[]{boundMaterial};
+        }
+    }
 
     public override void OnPlayableDestroy(Playable playable)
     {

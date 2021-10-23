@@ -31,20 +31,20 @@ class TreeViewPopupWindow : PopupWindowContent
             GUIUtility.ExitGUI();
         }
 
-        const int border = 4;
-        const int topPadding = 12;
-        const int searchHeight = 20;
-        const int remainTop = topPadding + searchHeight + border;
+        const int BORDER = 4;
+        const int TOP_PAD = 12;
+        const int SEARCH_HEIGHT = 20;
+        const int REMAIN_TOP = TOP_PAD + SEARCH_HEIGHT + BORDER;
         var searchRect = new Rect(
-            border,
-            topPadding,
-            rect.width - border * 2,
-            searchHeight);
+            BORDER,
+            TOP_PAD,
+            rect.width - BORDER * 2,
+            SEARCH_HEIGHT);
         var remainingRect = new Rect(
-            border,
-            topPadding + searchHeight + border,
-            rect.width - border * 2,
-            rect.height - remainTop - border);
+            BORDER,
+            TOP_PAD + SEARCH_HEIGHT + BORDER,
+            rect.width - BORDER * 2,
+            rect.height - REMAIN_TOP - BORDER);
 
         treeView.searchString =
             searchField.OnGUI(searchRect, treeView.searchString);

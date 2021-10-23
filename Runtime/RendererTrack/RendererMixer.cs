@@ -1,17 +1,17 @@
 using UnityEngine;
 using UnityEngine.Playables;
 using System.Linq;
+using System.Collections.Generic;
 
 [System.Serializable]
-public class RendererMixer : PlayableBehaviour
+public class RendererMixer : PlayableBehaviour, IMaterialProvider
 {
+    public const string MAT_IDX_FIELD = nameof(materialIndex);
     const int DEFAULT_MATERIAL_INDEX = -1;
 
-    /// <summary>
-    /// If non-negative, specifies one of the bound renderer's materials
-    /// to override exclusively.
-    /// If negative, all materials are overridden.
-    /// </summary>
+    [Tooltip("If non-negative, specifies one of the bound renderer's " +
+        "materials to override exclusively. If negative, all materials " +
+        "are overridden.")]
     public int materialIndex = DEFAULT_MATERIAL_INDEX;
 
     /// <summary>
@@ -24,7 +24,7 @@ public class RendererMixer : PlayableBehaviour
     /// </summary>
     Renderer boundRenderer;
 
-    public Material[] AffectedMaterials
+    public IEnumerable<Material> Materials
     {
         get
         {
@@ -75,7 +75,7 @@ public class RendererMixer : PlayableBehaviour
 
         int clipIndex = activeClips[0];
         float weight = playable.GetInputWeight(clipIndex);
-        MaterialBehaviour data = GetBehaviour(playable, clipIndex);
+        RendererBehaviour data = GetBehaviour(playable, clipIndex);
         var blocks = new MaterialPropertyBlock[materialCount];
         int start = 0;
         int end = materialCount;
@@ -88,7 +88,7 @@ public class RendererMixer : PlayableBehaviour
 
         for (int slotIndex = start; slotIndex < end; slotIndex++)
         {
-            var mix = new MaterialBehaviour(data);
+            var mix = new RendererBehaviour(data);
             var block = new MaterialPropertyBlock();
             if (!firstMixer)
                 boundRenderer.GetPropertyBlock(block, slotIndex);
@@ -122,7 +122,7 @@ public class RendererMixer : PlayableBehaviour
                     // Individually mix them them with property block
 
                     // Next clip
-                    var mix2 = new MaterialBehaviour(next);
+                    var mix2 = new RendererBehaviour(next);
                     ApplyToBehaviour(mix2, block, slotIndex, firstMixer);
                     mix2.Lerp(next, mix2, weight);
                     mix2.ApplyToPropertyBlock(block);
@@ -138,15 +138,15 @@ public class RendererMixer : PlayableBehaviour
         }
     }
 
-    static MaterialBehaviour GetBehaviour(Playable playable, int inputPort)
-        => ((ScriptPlayable<MaterialBehaviour>)playable.GetInput(inputPort))
+    static RendererBehaviour GetBehaviour(Playable playable, int inputPort)
+        => ((ScriptPlayable<RendererBehaviour>)playable.GetInput(inputPort))
            .GetBehaviour();
 
     bool IsMaterialIndexValid(int index)
         => index >= 0 && index < boundRenderer.sharedMaterials.Length;
 
     void ApplyToBehaviour(
-        MaterialBehaviour mix,
+        RendererBehaviour mix,
         MaterialPropertyBlock block,
         int materialIndex,
         bool firstMixer)
