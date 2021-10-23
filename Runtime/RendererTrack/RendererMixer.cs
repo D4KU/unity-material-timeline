@@ -41,6 +41,19 @@ public class RendererMixer : PlayableBehaviour, IMaterialProvider
         }
     }
 
+    int MaterialCount => boundRenderer.sharedMaterials.Length;
+
+    public override void OnPlayableDestroy(Playable playable)
+    {
+        if (boundRenderer == null)
+            return;
+
+        // Clear all material property blocks
+        int end = MaterialCount;
+        for (int i = 0; i < end; i++)
+            boundRenderer.SetPropertyBlock(null, i);
+    }
+
     public override void ProcessFrame(
         Playable playable,
         FrameData info,
@@ -54,7 +67,7 @@ public class RendererMixer : PlayableBehaviour, IMaterialProvider
         if (inputCount == 0)
             return;
 
-        int materialCount = boundRenderer.sharedMaterials.Length;
+        int materialCount = MaterialCount;
         if (materialCount == 0)
             return;
 
