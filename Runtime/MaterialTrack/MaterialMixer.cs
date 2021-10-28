@@ -20,15 +20,8 @@ public class MaterialMixer : PlayableBehaviour, IMaterialProvider
     /// </summary>
     bool firstFrameHappened;
 
-    public IEnumerable<Material> Materials
-    {
-        get
-        {
-            if (boundMaterial == null)
-                return new Material[0];
-            return new Material[]{boundMaterial};
-        }
-    }
+    public IEnumerable<Material> Materials => boundMaterial == null ?
+        new Material[0] : new Material[] { boundMaterial };
 
     public override void OnPlayableDestroy(Playable playable)
     {
@@ -79,15 +72,21 @@ public class MaterialMixer : PlayableBehaviour, IMaterialProvider
         // active clips at one specific frame
         foreach (int i in activeClips)
         {
+            // Weight of the first active clip
             float weight = playable.GetInputWeight(i);
+
+            // Data stored in the first active clip
             var data = GetBehaviour(playable, i);
+
+            // The mixed property value to be applied to the bound material
             var mix = new MaterialBehaviour(data);
 
             if (activeClips.Count() == 1)
             {
                 if (weight < 1f)
                 {
-                    // Mix clip with default material
+                    // The clip blends with the layer background.
+                    // Mix clip with default material.
                     mix.ApplyFromMaterial(boundMaterial);
                     mix.Lerp(mix, data, weight);
                 }
@@ -126,6 +125,9 @@ public class MaterialMixer : PlayableBehaviour, IMaterialProvider
         }
     }
 
+    /// <summary>
+    /// Get behaviour at given port from given playable
+    /// </summary>
     static MaterialBehaviour GetBehaviour(Playable playable, int inputPort)
         => ((ScriptPlayable<MaterialBehaviour>)playable.GetInput(inputPort))
            .GetBehaviour();

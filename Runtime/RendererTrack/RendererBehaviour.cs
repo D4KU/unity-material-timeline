@@ -4,15 +4,24 @@ using System;
 using Spt = UnityEngine.Rendering.ShaderPropertyType;
 using System.Collections.Generic;
 
+/// <summary>
+/// The data container of each clip. It can be seen as a <i>tagged union</i>,
+/// where the tag is the shader property name of the active value. Because
+/// a shader property can have different types, there are several value
+/// fields, but only one field is considered active at a time.
+/// </summary>
 [Serializable]
 public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
 {
+    /// Used for serialization in this class's inspector drawer
     public const string TYPE_FIELD = nameof(propertyType);
     public const string NAME_FIELD = nameof(propertyName);
     public const string TEX_FIELD = nameof(texture);
     public const string VEC_FIELD = nameof(vector);
 
-    [Tooltip("Object providing the manipulated materials")]
+    /// <summary>
+    /// Object providing the manipulated materials. Set from the outside.
+    /// </summary>
     public IMaterialProvider provider;
 
     [Tooltip("Name of the shader property to manipulate")]
@@ -21,12 +30,13 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
     [Tooltip("Type of the shader property to manipulate")]
     public Spt propertyType = Spt.Float;
 
-    [Tooltip("Texture to assign to shader property")]
+    [Tooltip("Texture to assign to the shader property")]
     public Texture texture;
 
-    [Tooltip("Value to assign to shader property")]
+    [Tooltip("Value to assign to the shader property")]
     public Vector4 vector;
 
+    /// <inheritdoc cref="IMaterialProvider.Materials"/>
     public IEnumerable<Material> Materials => provider?.Materials;
 
     public RendererBehaviour() : base() {}
@@ -51,6 +61,9 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
         vector = Vector4.Lerp(a.vector, b.vector, t);
     }
 
+    /// <summary>
+    /// Set this behaviour's value from the given material property block
+    /// </summary>
     public void ApplyFromPropertyBlock(MaterialPropertyBlock source)
     {
         switch (propertyType)
@@ -68,6 +81,9 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
         }
     }
 
+    /// <summary>
+    /// Apply this behaviour's value to the given material property block
+    /// </summary>
     public void ApplyToPropertyBlock(MaterialPropertyBlock target)
     {
         switch (propertyType)

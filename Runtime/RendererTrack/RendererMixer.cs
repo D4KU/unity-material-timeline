@@ -6,7 +6,9 @@ using System.Collections.Generic;
 [System.Serializable]
 public class RendererMixer : PlayableBehaviour, IMaterialProvider
 {
+    /// Used for serialization in this class's inspector drawer
     public const string MAT_IDX_FIELD = nameof(materialIndex);
+
     const int DEFAULT_MATERIAL_INDEX = -1;
 
     [Tooltip("If non-negative, specifies one of the bound renderer's " +
@@ -24,6 +26,19 @@ public class RendererMixer : PlayableBehaviour, IMaterialProvider
     /// </summary>
     Renderer boundRenderer;
 
+    /// <summary>
+    /// All materials the bound renderer references
+    /// </summary>
+    Material[] AvailableMaterials => boundRenderer.sharedMaterials;
+
+    /// <summary>
+    /// The number of materials the bound renderer references
+    /// </summary>
+    int MaterialCount => AvailableMaterials.Length;
+
+    /// <summary>
+    /// Materials operated on
+    /// </summary>
     public IEnumerable<Material> Materials
     {
         get
@@ -34,24 +49,17 @@ public class RendererMixer : PlayableBehaviour, IMaterialProvider
             if (IsMaterialIndexValid(materialIndex))
                 return new Material[]
                 {
-                    boundRenderer.sharedMaterials[materialIndex]
+                    AvailableMaterials[materialIndex]
                 };
 
-            return boundRenderer.sharedMaterials;
+            return AvailableMaterials;
         }
     }
 
-    int MaterialCount => boundRenderer.sharedMaterials.Length;
-
     public override void OnPlayableDestroy(Playable playable)
     {
-        if (boundRenderer == null)
-            return;
-
-        // Clear all material property blocks
-        int end = MaterialCount;
-        for (int i = 0; i < end; i++)
-            boundRenderer.SetPropertyBlock(null, i);
+        if (boundRenderer != null)
+            ClearAllSlots();
     }
 
     public override void ProcessFrame(
@@ -86,33 +94,51 @@ public class RendererMixer : PlayableBehaviour, IMaterialProvider
         if (activeClips.Length == 0)
             return;
 
+        // The index of the first found active clip of this frame
         int clipIndex = activeClips[0];
-        float weight = playable.GetInputWeight(clipIndex);
-        RendererBehaviour data = GetBehaviour(playable, clipIndex);
-        var blocks = new MaterialPropertyBlock[materialCount];
-        int start = 0;
-        int end = materialCount;
 
+        // Weight of the first active clip
+        float clipWeight = playable.GetInputWeight(clipIndex);
+
+        // Data stored in the first active clip
+        RendererBehaviour clipData = GetBehaviour(playable, clipIndex);
+
+        // Blocks that will be created during the process
+        var blocks = new MaterialPropertyBlock[materialCount];
+
+        // If the user-entered material slot index is valid, we only have
+        // to operate on this one slot, otherwise on all.
+        int startSlot = 0;
+        int endSlot = materialCount;
         if (IsMaterialIndexValid(materialIndex))
         {
-            start = materialIndex;
-            end   = materialIndex + 1;
+            startSlot = materialIndex;
+            endSlot   = materialIndex + 1;
         }
 
-        for (int slotIndex = start; slotIndex < end; slotIndex++)
+        for (int slotIndex = startSlot; slotIndex < endSlot; slotIndex++)
         {
-            var mix = new RendererBehaviour(data);
+            // The property block to applied to the current slot index.
             var block = new MaterialPropertyBlock();
+
+            // The mixed property value to be applied to the property
+            // block at the current slot index.
+            var mix = new RendererBehaviour(clipData);
+
+            // If another track mixer already ran before this one in the
+            // current frame, than we use his block as starting point and
+            // further mix it.
             if (!firstMixer)
                 boundRenderer.GetPropertyBlock(block, slotIndex);
 
             if (activeClips.Length == 1)
             {
-                if (weight < 1f)
+                if (clipWeight < 1f)
                 {
-                    // Mix clip into block
-                    ApplyToBehaviour(mix, block, slotIndex, firstMixer);
-                    mix.Lerp(mix, data, weight);
+                    // The clip blends with the layer background.
+                    // Mix clip into block.
+                    ApplyToBehaviour(block, mix, slotIndex);
+                    mix.Lerp(mix, clipData, clipWeight);
                 }
             }
             else
@@ -122,12 +148,12 @@ public class RendererMixer : PlayableBehaviour, IMaterialProvider
                 // two active clips at one specific frame.
                 var next = GetBehaviour(playable, clipIndex + 1);
 
-                if (data.propertyType == next.propertyType &&
-                    data.propertyName == next.propertyName)
+                if (clipData.propertyType == next.propertyType &&
+                    clipData.propertyName == next.propertyName)
                 {
                     // Properties of blended clips match.
                     // Mix current clip with next clip.
-                    mix.Lerp(next, data, weight);
+                    mix.Lerp(next, clipData, clipWeight);
                 }
                 else
                 {
@@ -136,13 +162,13 @@ public class RendererMixer : PlayableBehaviour, IMaterialProvider
 
                     // Next clip
                     var mix2 = new RendererBehaviour(next);
-                    ApplyToBehaviour(mix2, block, slotIndex, firstMixer);
-                    mix2.Lerp(next, mix2, weight);
+                    ApplyToBehaviour(block, mix2, slotIndex);
+                    mix2.Lerp(next, mix2, clipWeight);
                     mix2.ApplyToPropertyBlock(block);
 
                     // Current clip
-                    ApplyToBehaviour(mix, block, slotIndex, firstMixer);
-                    mix.Lerp(mix, data, weight);
+                    ApplyToBehaviour(block, mix, slotIndex);
+                    mix.Lerp(mix, clipData, clipWeight);
                 }
             }
 
@@ -151,35 +177,54 @@ public class RendererMixer : PlayableBehaviour, IMaterialProvider
         }
     }
 
+    /// <summary>
+    /// Get behaviour at given port from given playable
+    /// </summary>
     static RendererBehaviour GetBehaviour(Playable playable, int inputPort)
         => ((ScriptPlayable<RendererBehaviour>)playable.GetInput(inputPort))
            .GetBehaviour();
 
-    bool IsMaterialIndexValid(int index)
-        => index >= 0 && index < boundRenderer.sharedMaterials.Length;
-
+    /// <summary>
+    /// Set the shader property of <paramref name="target"/>, with the value
+    /// taken from <paramref name="source"/> if it isn't empty, and from the
+    /// bound material specified by <paramref name="fallbackMaterialIndex"/>
+    /// otherwise.
+    /// </summary>
     void ApplyToBehaviour(
-        RendererBehaviour mix,
-        MaterialPropertyBlock block,
-        int materialIndex,
-        bool firstMixer)
+        MaterialPropertyBlock source,
+        RendererBehaviour target,
+        int fallbackMaterialIndex)
     {
-        if (firstMixer)
+        if (source.isEmpty)
         {
-            Material material = boundRenderer.sharedMaterials[materialIndex];
+            Material material = AvailableMaterials[fallbackMaterialIndex];
             if (material != null)
-                mix.ApplyFromMaterial(material);
+                target.ApplyFromMaterial(material);
         }
         else
-        {
-            mix.ApplyFromPropertyBlock(block);
-        }
+            target.ApplyFromPropertyBlock(source);
     }
 
+    /// <summary>
+    /// Returns true if the given material index is available in the bound
+    /// renderer.
+    /// </summary>
+    bool IsMaterialIndexValid(int index)
+        => index >= 0 && index < MaterialCount;
+
+    /// <summary>
+    /// Remove the material property block from all materials slots of
+    /// the bound renderer that this mixer targets.
+    /// </summary>
     void ClearSlots()
     {
+        // If the user has updated the material index since the last frame,
+        // we need to clear the newly AND previously set slot.
         if (oldMaterialIndex == materialIndex)
         {
+            // Material index didn't update
+            // If the current index is out of bounds, consider it to
+            // target all slots.
             if (IsMaterialIndexValid(materialIndex))
                 boundRenderer.SetPropertyBlock(null, materialIndex);
             else
@@ -187,6 +232,9 @@ public class RendererMixer : PlayableBehaviour, IMaterialProvider
         }
         else
         {
+            // Material index updated
+            // If the index was or is out of bounds, consider it to
+            // target all slots.
             if (IsMaterialIndexValid(materialIndex) &&
                 IsMaterialIndexValid(oldMaterialIndex))
             {
@@ -194,18 +242,20 @@ public class RendererMixer : PlayableBehaviour, IMaterialProvider
                 boundRenderer.SetPropertyBlock(null, oldMaterialIndex);
             }
             else
-            {
                 ClearAllSlots();
-            }
 
             oldMaterialIndex = materialIndex;
         }
     }
 
+    /// <summary>
+    /// Remove the material property block from all materials slots of
+    /// the bound renderer.
+    /// </summary>
     void ClearAllSlots()
     {
-        int materialCount = boundRenderer.sharedMaterials.Length;
-        for (int i = 0; i < materialCount; i++)
+        int end = MaterialCount;
+        for (int i = 0; i < end; i++)
             boundRenderer.SetPropertyBlock(null, i);
     }
 }

@@ -5,9 +5,16 @@ using UnityEngine.Timeline;
 [TrackBindingType(typeof(Renderer))]
 [TrackColor(1, 0, 0)]
 [TrackClipType(typeof(RendererClip))]
-public class RendererTrack : MaterialTrack
+public class RendererTrack : TrackAsset, ILayerable
 {
     public RendererMixer template = new RendererMixer();
+
+    /// <inheritdoc cref="ILayerable.CreateLayerMixer"/>
+    public Playable CreateLayerMixer(
+        PlayableGraph graph,
+        GameObject go,
+        int inputCount)
+        => ScriptPlayable<MaterialLayerMixer>.Create(graph, inputCount);
 
     public override Playable CreateTrackMixer(
         PlayableGraph graph, GameObject go, int inputCount)
@@ -25,7 +32,9 @@ public class RendererTrack : MaterialTrack
             var data = ((RendererClip)clip.asset).template;
             clip.displayName = $"{data.propertyName} [{data.propertyType}]";
 
-            // Set material provider
+            // The track mixer created in this class is the object providing
+            // each clip's behaviour access to the materials of the bound
+            // renderer.
             data.provider = provider;
         }
     }

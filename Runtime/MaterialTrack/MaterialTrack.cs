@@ -30,7 +30,9 @@ public class MaterialTrack : TrackAsset, ILayerable
             var data = ((MaterialClip)clip.asset).template;
             clip.displayName = $"{data.propertyName} [{data.propertyType}]";
 
-            // Set material provider
+            // The track mixer created in this class is the object providing
+            // each clip's behaviour access to the materials of the bound
+            // renderer.
             data.provider = provider;
         }
     }

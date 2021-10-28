@@ -21,8 +21,13 @@ public class RendererBehaviourDrawer : PropertyDrawer
             GUIContent label)
     {
         DrawPropertyDropdown(position, property);
-        DrawValueProperty(property);
-        Refresh(property.serializedObject);
+
+        var nameProp = property.FindPropertyRelative(T.NAME_FIELD);
+        if (!string.IsNullOrEmpty(nameProp.stringValue))
+        {
+            DrawValueProperty(property);
+            Refresh(property.serializedObject);
+        }
     }
 
     protected void DrawValueProperty(SerializedProperty property)
@@ -64,8 +69,6 @@ public class RendererBehaviourDrawer : PropertyDrawer
         var targetObject = property.serializedObject.targetObject;
         var target = fieldInfo.GetValue(targetObject) as IMaterialProvider;
         var affectedMaterials = target.Materials;
-        if (affectedMaterials == null)
-            return;
 
         var nameProp = property.FindPropertyRelative(T.NAME_FIELD);
         var dropdownLabel = EditorGUI.PrefixLabel(
@@ -75,11 +78,18 @@ public class RendererBehaviourDrawer : PropertyDrawer
                 position.width,
                 EditorGUIUtility.singleLineHeight),
             new GUIContent("Property"));
-
-        if (EditorGUI.DropdownButton(
+        bool dropdownOpen = EditorGUI.DropdownButton(
             dropdownLabel,
             new GUIContent(nameProp.stringValue),
-            FocusType.Keyboard))
+            FocusType.Keyboard);
+
+        if (affectedMaterials == null)
+        {
+            TimelineEditor.Refresh(RefreshReason.ContentsModified);
+            return;
+        }
+
+        if (dropdownOpen)
         {
             // Create callback function when dropdown entry got selected
             Action<string> OnSelectionChanged = entry =>
