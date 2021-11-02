@@ -71,12 +71,12 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
     {
         if (propertyType == Spt.Texture)
         {
-            Texture blendedTex = null;
-            if (a.texture != null && b.texture != null)
-                blendedTex = BlendTextures(a.texture, b.texture, t);
+            Texture texA = a.texture == null ? ToTexture2D(a.vector) : a.texture;
+            Texture texB = b.texture == null ? ToTexture2D(b.vector) : b.texture;
+            Texture blendedTex = BlendTextures(texA, texB, t);
 
             if (blendedTex == null)
-                texture = t < .5f ? a.texture : b.texture;
+                texture = t < .5f ? texA : texB;
             else
                 texture = blendedTex;
         }
@@ -116,8 +116,9 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
                 target.SetFloat(propertyName, vector.x);
                 break;
             case Spt.Texture:
-                if (texture != null)
-                    target.SetTexture(propertyName, texture);
+                if (texture == null)
+                    texture = ToTexture2D(vector);
+                target.SetTexture(propertyName, texture);
                 break;
             default:
                 target.SetVector(propertyName, vector);
@@ -148,14 +149,14 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
         }
     }
 
-    Texture BlendTextures(Texture a, Texture b, float t)
+    protected Texture BlendTextures(Texture a, Texture b, float t)
     {
         var shader = BlendShader;
         if (shader == null)
         {
             Debug.LogWarning("'TextureBlend' shader could not be found. " +
                 "To ensure it's included in the build, add it to the " +
-                "list of always included shaders unter ProjectSettings " +
+                "list of always included shaders under ProjectSettings " +
                 "> Graphics.");
             return null;
         }
@@ -172,14 +173,21 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
         return ToTexture2D(rt);
     }
 
-    Texture2D ToTexture2D(RenderTexture rt)
+    protected Texture2D ToTexture2D(RenderTexture rt)
     {
-        Texture2D tex = new Texture2D(rt.width, rt.height);
-
+        var tex = new Texture2D(rt.width, rt.height);
         RenderTexture.active = rt;
         tex.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
         tex.Apply();
         return tex;
-}
+    }
+
+    protected Texture2D ToTexture2D(Color color)
+    {
+        var tex = new Texture2D(1, 1);
+        tex.SetPixel(0, 0, color);
+        tex.Apply();
+        return tex;
+    }
 }
 

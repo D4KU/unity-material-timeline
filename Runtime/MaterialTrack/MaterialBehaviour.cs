@@ -102,8 +102,9 @@ public class MaterialBehaviour : RendererBehaviour
                 switch (textureTarget)
                 {
                     case TextureTarget.Asset:
-                        if (texture != null)
-                            target.SetTexture(propertyName, texture);
+                        if (texture == null)
+                            texture = ToTexture2D(vector);
+                        target.SetTexture(propertyName, texture);
                         break;
                     case TextureTarget.Tiling:
                         target.SetTextureScale(propertyName, vector);

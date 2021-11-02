@@ -30,32 +30,45 @@ public class RendererBehaviourDrawer : PropertyDrawer
         }
     }
 
+    protected void DrawTextureField(SerializedProperty root)
+    {
+        var texP = root.FindPropertyRelative(T.TEX_FIELD);
+        var vecP = root.FindPropertyRelative(T.VEC_FIELD);
+        EditorGUILayout.PropertyField(texP, ValueLabel);
+
+        var defLabel = new GUIContent("Default Color", "When this " +
+            "texture is blended and no other clip is available to " +
+            "supply the second texture, the texture is blended with " +
+            "this color instead. It is also used if no texture is set.");
+        vecP.vector4Value = EditorGUILayout.ColorField(defLabel, vecP.vector4Value);
+    }
+
+    protected GUIContent ValueLabel => new GUIContent("Value");
+
     protected void DrawValueProperty(SerializedProperty property)
     {
         var typeP = property.FindPropertyRelative(T.TYPE_FIELD);
         var vecP  = property.FindPropertyRelative(T.VEC_FIELD);
-        var valLabel = new GUIContent("Value");
         var vecVal = vecP.vector4Value;
 
         switch ((U)typeP.enumValueIndex)
         {
             case U.Texture:
-                var texProp = property.FindPropertyRelative(T.TEX_FIELD);
-                EditorGUILayout.PropertyField(texProp, valLabel);
+                DrawTextureField(property);
                 break;
             case U.Color:
-                vecP.vector4Value = EditorGUILayout.ColorField(valLabel, vecVal);
+                vecP.vector4Value = EditorGUILayout.ColorField(ValueLabel, vecVal);
                 break;
             case U.Vector:
-                EditorGUILayout.PropertyField(vecP, valLabel);
+                EditorGUILayout.PropertyField(vecP, ValueLabel);
                 break;
             case U.Float:
-                vecVal.x = EditorGUILayout.FloatField(valLabel, vecVal.x);
+                vecVal.x = EditorGUILayout.FloatField(ValueLabel, vecVal.x);
                 vecP.vector4Value = vecVal;
                 break;
             case U.Range:
                 vecVal.x = EditorGUILayout.Slider(
-                    valLabel,
+                    ValueLabel,
                     vecVal.x,
                     vecVal.y,
                     vecVal.z);

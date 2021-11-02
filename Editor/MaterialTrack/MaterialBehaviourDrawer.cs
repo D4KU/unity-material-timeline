@@ -32,20 +32,20 @@ public class MaterialBehaviourDrawer : RendererBehaviourDrawer
             var typeP = property.FindPropertyRelative(T.TYPE_FIELD);
             if (typeP.enumValueIndex == (int)ShaderPropertyType.Texture)
             {
-                var valLabel = new GUIContent("Value");
                 var texTrgP = property.FindPropertyRelative(T.TEX_TARGET_FIELD);
                 EditorGUILayout.PropertyField(texTrgP);
 
                 if (texTrgP.enumValueIndex == (int)T.TextureTarget.Asset)
                 {
-                    var texP = property.FindPropertyRelative(T.TEX_FIELD);
-                    EditorGUILayout.PropertyField(texP, valLabel);
+                    DrawTextureField(property);
                 }
                 else
                 {
                     var vecP = property.FindPropertyRelative(T.VEC_FIELD);
-                    vecP.vector4Value =
-                        EditorGUILayout.Vector2Field(valLabel, vecP.vector4Value);
+                    Vector2 vec2 =
+                        EditorGUILayout.Vector2Field(ValueLabel, vecP.vector4Value);
+                    Vector4 vec4 = vecP.vector4Value;
+                    vecP.vector4Value = new Vector4(vec2.x, vec2.y, vec4.z, vec4.w);
                 }
             }
             else
