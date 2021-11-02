@@ -26,7 +26,11 @@ public class MaterialMixer : PlayableBehaviour, IMaterialProvider
     public override void OnPlayableDestroy(Playable playable)
     {
         firstFrameHappened = false;
+        ResetMaterial();
+    }
 
+    void ResetMaterial()
+    {
         // Restore original values
         if (boundMaterial != null && defaultMaterial != null)
             boundMaterial.CopyPropertiesFromMaterial(defaultMaterial);
@@ -57,6 +61,13 @@ public class MaterialMixer : PlayableBehaviour, IMaterialProvider
             }
             else
             {
+#if UNITY_EDITOR
+                // Prevent Unity from saving the previewed version of
+                // the bound material. Couldn't make it work via
+                // TrackAsset.GatherProperties().
+                UnityEditor.EditorApplication.quitting += ResetMaterial;
+#endif
+
                 // Save original value
                 defaultMaterial = new Material(boundMaterial);
                 firstFrameHappened = true;
