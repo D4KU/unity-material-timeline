@@ -3,6 +3,7 @@ using UnityEngine;
 using System;
 using Spt = UnityEngine.Rendering.ShaderPropertyType;
 using System.Collections.Generic;
+using UnityEngine.Experimental.Rendering;
 
 /// <summary>
 /// The data container of each clip. It can be seen as a <i>tagged union</i>,
@@ -39,6 +40,17 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
     /// <inheritdoc cref="IMaterialProvider.Materials"/>
     public IEnumerable<Material> Materials => provider?.Materials;
 
+    static Shader blendShader;
+    public static Shader BlendShader
+    {
+        get
+        {
+            if (blendShader == null)
+                blendShader = Shader.Find("Hidden/MaterialTrackTexLerp");
+            return blendShader;
+        }
+    }
+
     public RendererBehaviour() : base() {}
     public RendererBehaviour(RendererBehaviour other) : base()
     {
@@ -57,11 +69,22 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
     /// </summary>
     public virtual void Lerp(RendererBehaviour a, RendererBehaviour b, float t)
     {
-        texture = a.texture;
-        vector = Vector4.Lerp(a.vector, b.vector, t);
+        if (propertyType == Spt.Texture)
+        {
+            Texture blendedTex = null;
+            if (a.texture != null && b.texture != null)
+                blendedTex = BlendTextures(a.texture, b.texture, t);
+
+            if (blendedTex == null)
+                texture = t < .5f ? a.texture : b.texture;
+            else
+                texture = blendedTex;
+        }
+        else
+            vector = Vector4.Lerp(a.vector, b.vector, t);
     }
 
-    /// <summary>
+    /// summary
     /// Set this behaviour's value from the given material property block
     /// </summary>
     public void ApplyFromPropertyBlock(MaterialPropertyBlock source)
@@ -124,5 +147,39 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
                 break;
         }
     }
+
+    Texture BlendTextures(Texture a, Texture b, float t)
+    {
+        var shader = BlendShader;
+        if (shader == null)
+        {
+            Debug.LogWarning("'TextureBlend' shader could not be found. " +
+                "To ensure it's included in the build, add it to the " +
+                "list of always included shaders unter ProjectSettings " +
+                "> Graphics.");
+            return null;
+        }
+
+        int width = (int)Mathf.Lerp(a.width, b.width, t);
+        int height = (int)Mathf.Lerp(a.height, b.height, t);
+        var rt = new RenderTexture(width, height, depth: 0);
+
+        var blendMat = new Material(shader);
+        blendMat.SetTexture("_SideTex", b);
+        blendMat.SetFloat("_weight", t);
+
+        Graphics.Blit(a, rt, blendMat);
+        return ToTexture2D(rt);
+    }
+
+    Texture2D ToTexture2D(RenderTexture rt)
+    {
+        Texture2D tex = new Texture2D(rt.width, rt.height);
+
+        RenderTexture.active = rt;
+        tex.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
+        tex.Apply();
+        return tex;
+}
 }
 
