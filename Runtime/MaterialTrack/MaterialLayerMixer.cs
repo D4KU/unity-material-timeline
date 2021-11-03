@@ -1,5 +1,7 @@
 using UnityEngine.Playables;
 
+namespace MaterialTrack
+{
 public class MaterialLayerMixer : PlayableBehaviour
 {
     /// <summary>
@@ -17,4 +19,5 @@ public class MaterialLayerMixer : PlayableBehaviour
         // frame that it's the first one
         MaterialLayerMixer.frameClean = true;
     }
+}
 }

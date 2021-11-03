@@ -2,6 +2,8 @@
 using System;
 using Spt = UnityEngine.Rendering.ShaderPropertyType;
 
+namespace MaterialTrack
+{
 [Serializable]
 public class MaterialBehaviour : RendererBehaviour
 {
@@ -136,4 +138,5 @@ public class MaterialBehaviour : RendererBehaviour
             base.Lerp(a, b, t);
         }
     }
+}
 }

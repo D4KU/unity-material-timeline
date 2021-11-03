@@ -4,6 +4,9 @@ using System;
 using UnityEditor.Timeline;
 using System.Collections.Generic;
 using U = UnityEngine.Rendering.ShaderPropertyType;
+
+namespace MaterialTrack
+{
 using T = RendererBehaviour;
 
 [CustomPropertyDrawer(typeof(T))]
@@ -212,4 +215,4 @@ public class RendererBehaviourDrawer : PropertyDrawer
         toRefresh.Update();
     }
 }
-
+}

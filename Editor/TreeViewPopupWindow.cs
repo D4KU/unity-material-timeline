@@ -2,6 +2,8 @@ using UnityEditor.IMGUI.Controls;
 using UnityEditor;
 using UnityEngine;
 
+namespace MaterialTrack
+{
 /// <summary>
 /// Popup that wraps a TreeView element
 /// </summary>
@@ -68,4 +70,5 @@ class TreeViewPopupWindow : PopupWindowContent
     }
 
     public void ForceClose() => shouldClose = true;
+}
 }

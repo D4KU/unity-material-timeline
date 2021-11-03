@@ -2,6 +2,8 @@ using UnityEditor.IMGUI.Controls;
 using System.Collections.Generic;
 using System;
 
+namespace MaterialTrack
+{
 /// <summary>
 /// TreeView to show a list of strings and call a callback when one of them
 /// is selected.
@@ -46,4 +48,5 @@ public class StringTreeView : TreeView
         TreeViewItem item = FindItem(id, rootItem);
         onSelectionChanged(item.displayName);
     }
+}
 }

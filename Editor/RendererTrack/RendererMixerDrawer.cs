@@ -1,6 +1,8 @@
 using UnityEditor;
 using UnityEngine;
 
+namespace MaterialTrack
+{
 [CustomPropertyDrawer(typeof(RendererMixer))]
 public class RendererMixerDrawer : PropertyDrawer
 {
@@ -19,4 +21,5 @@ public class RendererMixerDrawer : PropertyDrawer
         EditorGUILayout.PropertyField(
                 property.FindPropertyRelative(RendererMixer.MAT_IDX_FIELD));
     }
+}
 }

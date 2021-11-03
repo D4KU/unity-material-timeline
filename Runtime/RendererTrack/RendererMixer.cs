@@ -3,6 +3,8 @@ using UnityEngine.Playables;
 using System.Linq;
 using System.Collections.Generic;
 
+namespace MaterialTrack
+{
 [System.Serializable]
 public class RendererMixer : PlayableBehaviour, IMaterialProvider
 {
@@ -258,4 +260,5 @@ public class RendererMixer : PlayableBehaviour, IMaterialProvider
         for (int i = 0; i < end; i++)
             boundRenderer.SetPropertyBlock(null, i);
     }
+}
 }

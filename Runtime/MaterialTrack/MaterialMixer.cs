@@ -3,6 +3,8 @@ using UnityEngine.Playables;
 using System.Linq;
 using System.Collections.Generic;
 
+namespace MaterialTrack
+{
 public class MaterialMixer : PlayableBehaviour, IMaterialProvider
 {
     /// <summary>
@@ -142,4 +144,5 @@ public class MaterialMixer : PlayableBehaviour, IMaterialProvider
     static MaterialBehaviour GetBehaviour(Playable playable, int inputPort)
         => ((ScriptPlayable<MaterialBehaviour>)playable.GetInput(inputPort))
            .GetBehaviour();
+}
 }

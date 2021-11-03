@@ -1,6 +1,9 @@
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
+
+namespace MaterialTrack
+{
 using T = MaterialBehaviour;
 
 [CustomPropertyDrawer(typeof(T))]
@@ -72,4 +75,5 @@ public class MaterialBehaviourDrawer : RendererBehaviourDrawer
         // Draw material mode toggle
         EditorGUILayout.PropertyField(useMatP);
     }
+}
 }

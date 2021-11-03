@@ -3,8 +3,9 @@ using UnityEngine;
 using System;
 using Spt = UnityEngine.Rendering.ShaderPropertyType;
 using System.Collections.Generic;
-using UnityEngine.Experimental.Rendering;
 
+namespace MaterialTrack
+{
 /// <summary>
 /// The data container of each clip. It can be seen as a <i>tagged union</i>,
 /// where the tag is the shader property name of the active value. Because
@@ -190,4 +191,4 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
         return tex;
     }
 }
-
+}

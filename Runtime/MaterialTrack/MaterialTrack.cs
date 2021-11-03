@@ -2,6 +2,8 @@
 using UnityEngine.Playables;
 using UnityEngine.Timeline;
 
+namespace MaterialTrack
+{
 [TrackBindingType(typeof(Material))]
 [TrackColor(.5f, .84f, 1f)]
 [TrackClipType(typeof(MaterialClip))]
@@ -36,4 +38,5 @@ public class MaterialTrack : TrackAsset, ILayerable
             data.provider = provider;
         }
     }
+}
 }
