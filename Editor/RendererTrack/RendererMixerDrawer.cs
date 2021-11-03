@@ -13,6 +13,10 @@ public class RendererMixerDrawer : PropertyDrawer
             Rect position,
             SerializedProperty property,
             GUIContent label)
-        => EditorGUILayout.PropertyField(
-            property.FindPropertyRelative(RendererMixer.MAT_IDX_FIELD));
+    {
+        // Draw a field to specify which of the renderer's materials to
+        // influence
+        EditorGUILayout.PropertyField(
+                property.FindPropertyRelative(RendererMixer.MAT_IDX_FIELD));
+    }
 }

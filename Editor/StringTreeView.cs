@@ -2,6 +2,10 @@ using UnityEditor.IMGUI.Controls;
 using System.Collections.Generic;
 using System;
 
+/// <summary>
+/// TreeView to show a list of strings and call a callback when one of them
+/// is selected.
+/// </summary>
 public class StringTreeView : TreeView
 {
     readonly IEnumerable<string> entries;
