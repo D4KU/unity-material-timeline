@@ -5,7 +5,7 @@ using UnityEngine.Timeline;
 namespace MaterialTrack
 {
 [TrackBindingType(typeof(Material))]
-[TrackColor(.5f, .84f, 1f)]
+[TrackColor(.05f, .6f, .8f)]
 [TrackClipType(typeof(MaterialClip))]
 public class MaterialTrack : TrackAsset, ILayerable
 {
@@ -30,7 +30,7 @@ public class MaterialTrack : TrackAsset, ILayerable
         {
             // Set display name of each clip
             var data = ((MaterialClip)clip.asset).template;
-            clip.displayName = $"{data.propertyName} [{data.propertyType}]";
+            clip.displayName = RendererTrack.BuildClipName(data);
 
             // The track mixer created in this class is the object providing
             // each clip's behaviour access to the materials of the bound
