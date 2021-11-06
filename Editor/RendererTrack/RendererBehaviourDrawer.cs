@@ -1,5 +1,6 @@
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Rendering;
 using System;
 using UnityEditor.Timeline;
 using System.Collections.Generic;
@@ -78,14 +79,52 @@ public class RendererBehaviourDrawer : PropertyDrawer
     }
 
     /// <summary>
+    /// Draw an error message box if the chosen shader property doesn't match
+    /// the given texture dimension
+    /// </summary>
+    protected void MaybeDrawTextureDimensionErrorBox(
+        SerializedProperty root, TextureDimension matchTo)
+    {
+        // Chosen shader property name
+        SerializedProperty nameP = root.FindPropertyRelative(T.NAME_FIELD);
+
+        // Draw box if any material this behaviour manipulates has a texture
+        // property of the same name, with a different dimension.
+        foreach (Material mat in GetAffectedMaterials(root))
+        {
+            TextureDimension propertyDimension =
+                mat.shader.GetPropertyTextureDimension(nameP.stringValue);
+
+            if (propertyDimension != matchTo)
+            {
+                string msg = "You can't assign a texture with dimension " +
+                    $"{matchTo} to a property with dimension " +
+                    $"{propertyDimension}.";
+                EditorGUILayout.HelpBox(msg, MessageType.Error);
+                return;
+            }
+        }
+    }
+
+    /// <summary>
     /// Draw texture value field with a field for the default color
     /// </summary>
     protected void DrawTextureField(SerializedProperty root)
     {
         SerializedProperty texP = root.FindPropertyRelative(T.TEX_FIELD);
-        SerializedProperty vecP = root.FindPropertyRelative(T.VEC_FIELD);
         EditorGUILayout.PropertyField(texP, ValueLabel);
 
+        // The UI would be nicer here if we would render an object field
+        // of the Texture subclass the chosen property actually expects.
+        // The problem are RenderTextures, which don't inherit from
+        // Texture2D, but are indistinguishable from them for shaders.
+        // So instead, all we can do is to render a Texture base class field
+        // and display an error when the linked texture dimension is
+        // incorrect.
+        if (texP.objectReferenceValue is Texture texture)
+            MaybeDrawTextureDimensionErrorBox(root, texture.dimension);
+
+        SerializedProperty vecP = root.FindPropertyRelative(T.VEC_FIELD);
         GUIContent defLabel = new GUIContent("Default Color", "When this " +
             "texture is blended and no other clip is available to " +
             "supply the second texture, the texture is blended with " +
@@ -94,14 +133,31 @@ public class RendererBehaviourDrawer : PropertyDrawer
     }
 
     /// <summary>
+    /// Returns the materials the currently drawn behaviour manipulates.
+    /// Never returns null.
+    /// </summary>
+    protected IEnumerable<Material> GetAffectedMaterials(SerializedProperty property)
+    {
+        // Object whose inspector is currently drawn.
+        UnityEngine.Object targetObject = property.serializedObject.targetObject;
+
+        // Object this drawer renders. It's a field of 'targetObject'.
+        if (fieldInfo.GetValue(targetObject) is IMaterialProvider target
+                && target.Materials != null)
+            return target.Materials;
+
+        // Ensure that the timeline rebuilds the graph, so that
+        // the material provider could initialize
+        TimelineEditor.Refresh(RefreshReason.ContentsModified);
+        return new Material[0];
+    }
+
+    /// <summary>
     /// Draw a searchable dropdown from which to chose the name of the shader
     /// property to manipulate
     /// </summary>
     protected void DrawPropertyDropdown(Rect position, SerializedProperty root)
     {
-        // Object whose inspector is currently drawn.
-        UnityEngine.Object targetObject = root.serializedObject.targetObject;
-
         // The currently chosen shader property name
         SerializedProperty nameProp = root.FindPropertyRelative(T.NAME_FIELD);
 
@@ -119,34 +175,30 @@ public class RendererBehaviourDrawer : PropertyDrawer
             FocusType.Keyboard);
 
         if (dropdownOpen)
-        {
-            // Object this drawer renders. It's a field of 'targetObject'.
-            var target = fieldInfo.GetValue(targetObject) as IMaterialProvider;
-            if (target == null)
-                return;
-
-            // Materials 'target' is manipulating
-            IEnumerable<Material> affectedMaterials = target.Materials;
-            if (affectedMaterials == null)
-            {
-                // Ensure that the timeline rebuilds the graph, so that
-                // the material provider could initialize
-                TimelineEditor.Refresh(RefreshReason.ContentsModified);
-                return;
-            }
-
-            DrawMaterialPropertyList(dropdownLabel, root, affectedMaterials);
-        }
+            DrawMaterialPropertyList(dropdownLabel, root);
     }
 
     /// <summary>
     /// Draw a searchable list of shader properties found in the given materials
     /// </summary>
-    protected void DrawMaterialPropertyList(
-        Rect position,
-        SerializedProperty root,
-        IEnumerable<Material> materials)
+    protected void DrawMaterialPropertyList(Rect position, SerializedProperty root)
     {
+        // Materials to list properties of
+        IEnumerable<Material> materials = GetAffectedMaterials(root);
+
+        // Collect all unique property names to fill list with
+        var propertyNames = new HashSet<string>();
+        foreach (Material mat in materials)
+        {
+            // Can't pass all materials directly to GetMaterialProperties(),
+            // because it demands that they share all properties
+            var props = MaterialEditor.GetMaterialProperties(
+                new Material[] { mat });
+
+            foreach (MaterialProperty p in props)
+                propertyNames.Add(p.name);
+        }
+
         // Create callback function when dropdown entry got selected
         Action<string> OnSelectionChanged = entry =>
         {
@@ -155,9 +207,6 @@ public class RendererBehaviourDrawer : PropertyDrawer
             foreach (Material mat in materials)
             {
                 Shader shader = mat.shader;
-                if (shader == null)
-                    continue;
-
                 int propIndex = shader.FindPropertyIndex(entry);
                 if (propIndex < 0)
                     // Shader doesn't have any property with selected name
@@ -184,23 +233,11 @@ public class RendererBehaviourDrawer : PropertyDrawer
                 // Ensure selected entry is triggering updates immediately
                 RefreshObject(root.serializedObject);
                 TimelineEditor.Refresh(RefreshReason.ContentsModified);
-                break;
+                return;
             }
         };
 
-        // Draw dropdown content
-        var propertyNames = new HashSet<string>();
-        foreach (Material mat in materials)
-        {
-            // Can't pass all materials directly to GetMaterialProperties(),
-            // because it demands that they share all properties
-            var props = MaterialEditor.GetMaterialProperties(
-                new Material[] { mat });
-
-            foreach (MaterialProperty p in props)
-                propertyNames.Add(p.name);
-        }
-
+        // Build dropdown popup and show it
         var treeView = new StringTreeView(propertyNames, OnSelectionChanged);
         var treeViewPopup = new TreeViewPopupWindow(treeView)
         {

@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System;
+using UnityEngine.Rendering;
 using Spt = UnityEngine.Rendering.ShaderPropertyType;
 
 namespace MaterialTrack
@@ -85,7 +86,7 @@ public class MaterialBehaviour : RendererBehaviour
     /// </summary>
     public void ApplyToMaterial(Material target)
     {
-        if (materialMode && material != null)
+        if (materialMode && material)
         {
             target.CopyPropertiesFromMaterial(material);
             return;
@@ -104,9 +105,7 @@ public class MaterialBehaviour : RendererBehaviour
                 switch (textureTarget)
                 {
                     case TextureTarget.Asset:
-                        if (texture == null)
-                            texture = ToTexture2D(vector);
-                        target.SetTexture(propertyName, texture);
+                        ApplyToTexture(target);
                         break;
                     case TextureTarget.Tiling:
                         target.SetTextureScale(propertyName, vector);
@@ -120,6 +119,22 @@ public class MaterialBehaviour : RendererBehaviour
                 target.SetVector(propertyName, vector);
                 break;
         }
+    }
+
+    /// <summary>
+    /// Interpret this behaviour's data as texture property data and set it
+    /// in the given material
+    /// </summary>
+    void ApplyToTexture(Material target)
+    {
+        // Create a 2D texture from the set default color if behaviour has
+        // no texture set
+        if (!texture)
+            texture = vector.ToTexture2D();
+
+        if (texture.dimension ==
+                target.shader.GetPropertyTextureDimension(propertyName))
+            target.SetTexture(propertyName, texture);
     }
 
     /// <summary>

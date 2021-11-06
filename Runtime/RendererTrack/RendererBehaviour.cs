@@ -1,8 +1,9 @@
-using UnityEngine.Playables;
 using UnityEngine;
+using UnityEngine.Playables;
+using UnityEngine.Rendering;
 using System;
-using Spt = UnityEngine.Rendering.ShaderPropertyType;
 using System.Collections.Generic;
+using Spt = UnityEngine.Rendering.ShaderPropertyType;
 
 namespace MaterialTrack
 {
@@ -72,20 +73,19 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
     {
         if (propertyType == Spt.Texture)
         {
-            Texture texA = a.texture == null ? ToTexture2D(a.vector) : a.texture;
-            Texture texB = b.texture == null ? ToTexture2D(b.vector) : b.texture;
-            Texture blendedTex = BlendTextures(texA, texB, t);
+            Texture texA = a.texture ? a.texture : a.vector.ToTexture2D();
+            Texture texB = b.texture ? b.texture : b.vector.ToTexture2D();
+            texture = BlendTextures(texA, texB, t);
 
-            if (blendedTex == null)
+            // If blend failed, resort to hard cu
+            if (!texture)
                 texture = t < .5f ? texA : texB;
-            else
-                texture = blendedTex;
         }
         else
             vector = Vector4.Lerp(a.vector, b.vector, t);
     }
 
-    /// summary
+    /// <summary>
     /// Set this behaviour's value from the given material property block
     /// </summary>
     public void ApplyFromPropertyBlock(MaterialPropertyBlock source)
@@ -118,7 +118,7 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
                 break;
             case Spt.Texture:
                 if (texture == null)
-                    texture = ToTexture2D(vector);
+                    texture = vector.ToTexture2D();
                 target.SetTexture(propertyName, texture);
                 break;
             default:
@@ -150,8 +150,16 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
         }
     }
 
+    /// <summary>
+    /// Create a new texture as linear interpolation of the given textures.
+    /// Resolution is also interpolated.
+    /// </summary>
     protected Texture BlendTextures(Texture a, Texture b, float t)
     {
+        if (a.dimension != TextureDimension.Tex2D ||
+            b.dimension != TextureDimension.Tex2D)
+            return null;
+
         var shader = BlendShader;
         if (shader == null)
         {
@@ -162,33 +170,20 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
             return null;
         }
 
-        int width = (int)Mathf.Lerp(a.width, b.width, t);
+        // Blend texture resolution
+        int width  = (int)Mathf.Lerp(a.width,  b.width,  t);
         int height = (int)Mathf.Lerp(a.height, b.height, t);
-        var rt = new RenderTexture(width, height, depth: 0);
+        RenderTexture result = new RenderTexture(width, height, depth: 0);
 
+        // Set 'b' and 't' in material for blending.
+        // 'a' is set by Graphics.Blit() to the '_MaintTex' property.
         var blendMat = new Material(shader);
         blendMat.SetTexture("_SideTex", b);
         blendMat.SetFloat("_weight", t);
 
-        Graphics.Blit(a, rt, blendMat);
-        return ToTexture2D(rt);
-    }
-
-    protected Texture2D ToTexture2D(RenderTexture rt)
-    {
-        var tex = new Texture2D(rt.width, rt.height);
-        RenderTexture.active = rt;
-        tex.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
-        tex.Apply();
-        return tex;
-    }
-
-    protected Texture2D ToTexture2D(Color color)
-    {
-        var tex = new Texture2D(1, 1);
-        tex.SetPixel(0, 0, color);
-        tex.Apply();
-        return tex;
+        // Render blend of both given textures to render texture.
+        Graphics.Blit(a, result, blendMat);
+        return result.ToTexture2D();
     }
 }
 }
