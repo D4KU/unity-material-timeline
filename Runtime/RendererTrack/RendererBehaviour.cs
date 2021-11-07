@@ -42,14 +42,25 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
     /// <inheritdoc cref="IMaterialProvider.Materials"/>
     public IEnumerable<Material> Materials => provider?.Materials;
 
-    static Shader blendShader;
-    public static Shader BlendShader
+    static Material blendMaterial;
+    public static Material BlendMaterial
     {
         get
         {
-            if (blendShader == null)
-                blendShader = Shader.Find("Hidden/MaterialTrackTexLerp");
-            return blendShader;
+            if (blendMaterial == null)
+            {
+                Shader shader = Shader.Find("Hidden/MaterialTrackTexLerp");
+                if (shader == null)
+                {
+                    Debug.LogWarning("'TextureBlend' shader could not be found. " +
+                        "To ensure it's included in the build, add it to the " +
+                        "list of always included shaders under ProjectSettings " +
+                        "> Graphics.");
+                    return null;
+                }
+                blendMaterial = new Material(shader);
+            }
+            return blendMaterial;
         }
     }
 
@@ -153,37 +164,34 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
     /// <summary>
     /// Create a new texture as linear interpolation of the given textures.
     /// Resolution is also interpolated.
+    /// The first texture passed determines the output texture's non-blendable
+    /// properties, such as wrapMode.
     /// </summary>
     protected Texture BlendTextures(Texture a, Texture b, float t)
     {
         if (a.dimension != TextureDimension.Tex2D ||
-            b.dimension != TextureDimension.Tex2D)
+            b.dimension != TextureDimension.Tex2D ||
+            BlendMaterial == null)
             return null;
-
-        var shader = BlendShader;
-        if (shader == null)
-        {
-            Debug.LogWarning("'TextureBlend' shader could not be found. " +
-                "To ensure it's included in the build, add it to the " +
-                "list of always included shaders under ProjectSettings " +
-                "> Graphics.");
-            return null;
-        }
-
-        // Blend texture resolution
-        int width  = (int)Mathf.Lerp(a.width,  b.width,  t);
-        int height = (int)Mathf.Lerp(a.height, b.height, t);
-        RenderTexture result = new RenderTexture(width, height, depth: 0);
 
         // Set 'b' and 't' in material for blending.
         // 'a' is set by Graphics.Blit() to the '_MaintTex' property.
-        var blendMat = new Material(shader);
-        blendMat.SetTexture("_SideTex", b);
-        blendMat.SetFloat("_weight", t);
+        blendMaterial.SetTexture("_SideTex", b);
+        blendMaterial.SetFloat("_weight", t);
+
+        RenderTexture result = new RenderTexture(
+            width:  (int)Mathf.Lerp(a.width,  b.width,  t),
+            height: (int)Mathf.Lerp(a.height, b.height, t),
+            depth: 0)
+        {
+            anisoLevel = (int)Mathf.Lerp(a.anisoLevel, b.anisoLevel, t),
+            filterMode = (FilterMode)Mathf.Lerp((int)a.filterMode, (int)b.filterMode, t),
+            wrapMode   = a.wrapMode,
+        };
 
         // Render blend of both given textures to render texture.
-        Graphics.Blit(a, result, blendMat);
-        return result.ToTexture2D();
+        Graphics.Blit(a, result, blendMaterial);
+        return result;
     }
 }
 }
