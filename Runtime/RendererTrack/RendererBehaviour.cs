@@ -88,12 +88,14 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
             Texture texB = b.texture ? b.texture : b.vector.ToTexture2D();
             texture = BlendTextures(texA, texB, t);
 
-            // If blend failed, resort to hard cu
+            // If blend failed, resort to hard cut
             if (!texture)
                 texture = t < .5f ? texA : texB;
         }
-        else
-            vector = Vector4.Lerp(a.vector, b.vector, t);
+        // Always lerp vector, even if property type is a texture. Then we
+        // don't have to treat tiling/offset mode differently in the
+        // MaterialBehaviour.
+        vector = Vector4.Lerp(a.vector, b.vector, t);
     }
 
     /// <summary>
