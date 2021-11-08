@@ -30,7 +30,10 @@ public class MaterialTrack : TrackAsset, ILayerable
         {
             // Set display name of each clip
             var data = ((MaterialClip)clip.asset).template;
-            clip.displayName = RendererTrack.BuildClipName(data);
+            if (data.materialMode)
+                clip.displayName = data.material ? data.material.name : "Empty";
+            else
+                clip.displayName = RendererTrack.BuildClipName(data);
 
             // The track mixer created in this class is the object providing
             // each clip's behaviour access to the materials of the bound

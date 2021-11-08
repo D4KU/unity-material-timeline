@@ -86,9 +86,10 @@ public class MaterialBehaviour : RendererBehaviour
     /// </summary>
     public void ApplyToMaterial(Material target)
     {
-        if (materialMode && material)
+        if (materialMode)
         {
-            target.CopyPropertiesFromMaterial(material);
+            if (material && material != target)
+                target.CopyPropertiesFromMaterial(material);
             return;
         }
 
