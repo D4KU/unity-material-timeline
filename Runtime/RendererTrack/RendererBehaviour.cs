@@ -21,6 +21,17 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
     public const string NAME_FIELD = nameof(propertyName);
     public const string TEX_FIELD = nameof(texture);
     public const string VEC_FIELD = nameof(vector);
+    public const string TEX_TARGET_FIELD = nameof(textureTarget);
+
+    /// <summary>
+    /// Specifies how a texture is manipulated
+    /// </summary>
+    public enum TextureTarget
+    {
+        Asset,
+        Tiling,
+        Offset
+    }
 
     /// <summary>
     /// Object providing the manipulated materials. Set from the outside.
@@ -38,6 +49,9 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
 
     [Tooltip("Value to assign to the shader property")]
     public Vector4 vector;
+
+    [Tooltip("How to manipulate the texture?")]
+    public TextureTarget textureTarget;
 
     /// <inheritdoc cref="IMaterialProvider.Materials"/>
     public IEnumerable<Material> Materials => provider?.Materials;
@@ -67,10 +81,11 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
     public RendererBehaviour() : base() {}
     public RendererBehaviour(RendererBehaviour other) : base()
     {
-        propertyName = other.propertyName;
-        propertyType = other.propertyType;
-        texture      = other.texture;
-        vector       = other.vector;
+        propertyName  = other.propertyName;
+        propertyType  = other.propertyType;
+        texture       = other.texture;
+        vector        = other.vector;
+        textureTarget = other.textureTarget;
     }
 
     protected bool HasProperty(Material material)
@@ -82,19 +97,18 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
     /// </summary>
     public virtual void Lerp(RendererBehaviour a, RendererBehaviour b, float t)
     {
-        if (propertyType == Spt.Texture)
+        if (propertyType == Spt.Texture && textureTarget == TextureTarget.Asset)
         {
             Texture texA = a.texture ? a.texture : a.vector.ToTexture2D();
             Texture texB = b.texture ? b.texture : b.vector.ToTexture2D();
             texture = BlendTextures(texA, texB, t);
 
             // If blend failed, resort to hard cut
-            if (!texture)
+            if (texture == null)
                 texture = t < .5f ? texA : texB;
         }
-        // Always lerp vector, even if property type is a texture. Then we
-        // don't have to treat tiling/offset mode differently in the
-        // MaterialBehaviour.
+        // Lerp vector even if target is a texture asset, because it is then
+        // used to store the texture default value.
         vector = Vector4.Lerp(a.vector, b.vector, t);
     }
 
@@ -110,7 +124,18 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
                 vector.x = source.GetFloat(propertyName);
                 break;
             case Spt.Texture:
-                texture = source.GetTexture(propertyName);
+                switch (textureTarget)
+                {
+                    case TextureTarget.Asset:
+                        texture = source.GetTexture(propertyName);
+                        break;
+                    case TextureTarget.Tiling:
+                        vector = source.GetTextureScale(propertyName);
+                        break;
+                    case TextureTarget.Offset:
+                        vector = source.GetTextureOffset(propertyName);
+                        break;
+                }
                 break;
             default:
                 vector = source.GetVector(propertyName);
@@ -130,9 +155,20 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
                 target.SetFloat(propertyName, vector.x);
                 break;
             case Spt.Texture:
-                if (texture == null)
-                    texture = vector.ToTexture2D();
-                target.SetTexture(propertyName, texture);
+                switch (textureTarget)
+                {
+                    case TextureTarget.Asset:
+                        if (texture == null)
+                            texture = vector.ToTexture2D();
+                        target.SetTexture(propertyName, texture);
+                        break;
+                    case TextureTarget.Tiling:
+                        target.SetTextureScale(propertyName, vector);
+                        break;
+                    case TextureTarget.Offset:
+                        target.SetTextureOffset(propertyName, vector);
+                        break;
+                }
                 break;
             default:
                 target.SetVector(propertyName, vector);
@@ -155,7 +191,18 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
                 vector.x = source.GetFloat(propertyName);
                 break;
             case Spt.Texture:
-                texture = source.GetTexture(propertyName);
+                switch (textureTarget)
+                {
+                    case TextureTarget.Asset:
+                        texture = source.GetTexture(propertyName);
+                        break;
+                    case TextureTarget.Tiling:
+                        vector = source.GetTextureScale(propertyName);
+                        break;
+                    case TextureTarget.Offset:
+                        vector = source.GetTextureOffset(propertyName);
+                        break;
+                }
                 break;
             default:
                 vector = source.GetVector(propertyName);

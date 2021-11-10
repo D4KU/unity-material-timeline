@@ -1,6 +1,5 @@
 ﻿using UnityEngine;
 using System;
-using UnityEngine.Rendering;
 using Spt = UnityEngine.Rendering.ShaderPropertyType;
 
 namespace MaterialTrack
@@ -8,19 +7,8 @@ namespace MaterialTrack
 [Serializable]
 public class MaterialBehaviour : RendererBehaviour
 {
-    public const string TEX_TARGET_FIELD = nameof(textureTarget);
     public const string USE_MAT_FIELD = nameof(materialMode);
     public const string MAT_FIELD = nameof(material);
-
-    /// <summary>
-    /// Specifies how a texture is manipulated
-    /// </summary>
-    public enum TextureTarget
-    {
-        Asset,
-        Tiling,
-        Offset
-    }
 
     [Tooltip("Override all properties of the bound material with the ones " +
             "found in this material")]
@@ -30,15 +18,11 @@ public class MaterialBehaviour : RendererBehaviour
             "found in another one")]
     public bool materialMode;
 
-    [Tooltip("How to manipulate the texture?")]
-    public TextureTarget textureTarget;
-
     public MaterialBehaviour() : base() {}
     public MaterialBehaviour(MaterialBehaviour other) : base(other)
     {
         material = other.material;
         materialMode = other.materialMode;
-        textureTarget = other.textureTarget;
     }
 
     /// <summary>
@@ -47,38 +31,9 @@ public class MaterialBehaviour : RendererBehaviour
     new public void ApplyFromMaterial(Material source)
     {
         if (materialMode)
-        {
             material = new Material(source);
-            return;
-        }
-
-        if (!HasProperty(source))
-            return;
-
-        switch (propertyType)
-        {
-            case Spt.Float:
-            case Spt.Range:
-                vector.x = source.GetFloat(propertyName);
-                break;
-            case Spt.Texture:
-                switch (textureTarget)
-                {
-                    case TextureTarget.Asset:
-                        texture = source.GetTexture(propertyName);
-                        break;
-                    case TextureTarget.Tiling:
-                        vector = source.GetTextureScale(propertyName);
-                        break;
-                    case TextureTarget.Offset:
-                        vector = source.GetTextureOffset(propertyName);
-                        break;
-                }
-                break;
-            default:
-                vector = source.GetVector(propertyName);
-                break;
-        }
+        else
+            base.ApplyFromMaterial(source);
     }
 
     /// <summary>

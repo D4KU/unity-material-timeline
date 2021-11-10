@@ -55,7 +55,7 @@ public class RendererBehaviourDrawer : PropertyDrawer
         switch ((U)typeP.enumValueIndex)
         {
             case U.Texture:
-                DrawTextureField(root);
+                DrawTextureOptions(root);
                 break;
             case U.Color:
                 vecP.vector4Value = EditorGUILayout.ColorField(ValueLabel, vecVal);
@@ -107,9 +107,37 @@ public class RendererBehaviourDrawer : PropertyDrawer
     }
 
     /// <summary>
+    /// Draw texture target dropdown and corresponding value field
+    /// </summary>
+    protected void DrawTextureOptions(SerializedProperty root)
+    {
+        // Draw option to manipulate texture asset reference,
+        // tiling, or offset
+        SerializedProperty texTrgP = root.FindPropertyRelative(T.TEX_TARGET_FIELD);
+        EditorGUILayout.PropertyField(texTrgP);
+
+        if (texTrgP.enumValueIndex == (int)T.TextureTarget.Asset)
+        {
+            // If asset reference is chosen, draw a texture reference field
+            DrawTextureAssetField(root);
+        }
+        else
+        {
+            // Otherwise, draw a Vector2 for Tiling or Offset
+            SerializedProperty vecP = root.FindPropertyRelative(T.VEC_FIELD);
+
+            // Ensure to not overwrite z and w components of 'vecP'
+            Vector2 vec2 =
+                EditorGUILayout.Vector2Field(ValueLabel, vecP.vector4Value);
+            Vector4 vec4 = vecP.vector4Value;
+            vecP.vector4Value = new Vector4(vec2.x, vec2.y, vec4.z, vec4.w);
+        }
+    }
+
+    /// <summary>
     /// Draw texture value field with a field for the default color
     /// </summary>
-    protected void DrawTextureField(SerializedProperty root)
+    protected void DrawTextureAssetField(SerializedProperty root)
     {
         SerializedProperty texP = root.FindPropertyRelative(T.TEX_FIELD);
         EditorGUILayout.PropertyField(texP, ValueLabel);

@@ -62,5 +62,32 @@ public static class ExtensionMethods
     /// </summary>
     public static Texture2D ToTexture2D(this Vector4 vector)
         => ((Color)vector).ToTexture2D();
+
+    public static Vector4 GetTextureScaleOffset(
+            this MaterialPropertyBlock block, string name)
+        => block.GetVector(name + "_ST");
+
+    public static void SetTextureScaleOffset(
+            this MaterialPropertyBlock block, string name, Vector4 value)
+        => block.SetVector(name + "_ST", value);
+
+    public static Vector2 GetTextureScale(
+            this MaterialPropertyBlock block, string name)
+        => block.GetTextureScaleOffset(name);
+
+    public static void SetTextureScale(
+            this MaterialPropertyBlock block, string name, Vector2 value)
+        => block.SetTextureScaleOffset(name, new Vector4(value.x, value.y, 0, 0));
+
+    public static Vector2 GetTextureOffset(
+            this MaterialPropertyBlock block, string name)
+    {
+        Vector4 scaleOffset = block.GetTextureScaleOffset(name);
+        return new Vector2(scaleOffset.z, scaleOffset.w);
+    }
+
+    public static void SetTextureOffset(
+            this MaterialPropertyBlock block, string name, Vector2 value)
+        => block.SetTextureScaleOffset(name, new Vector4(1, 1, value.x, value.y));
 }
 }
