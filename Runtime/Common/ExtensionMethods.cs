@@ -89,5 +89,14 @@ public static class ExtensionMethods
     public static void SetTextureOffset(
             this MaterialPropertyBlock block, string name, Vector2 value)
         => block.SetTextureScaleOffset(name, new Vector4(1, 1, value.x, value.y));
+
+    public static Color TextureDefaultNameToColor(this string name)
+        => name.ToLowerInvariant() switch
+        {
+            "black" => Color.black,
+            "grey"  => Color.grey,
+            "bump"  => new Color(.5f, .5f, 1f, 1f),
+            _       => Color.white,
+        };
 }
 }

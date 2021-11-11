@@ -114,7 +114,22 @@ public class RendererBehaviourDrawer : PropertyDrawer
         // Draw option to manipulate texture asset reference,
         // tiling, or offset
         SerializedProperty texTrgP = root.FindPropertyRelative(T.TEX_TARGET_FIELD);
+
+        // Draw texture target dropdown button
+        EditorGUI.BeginChangeCheck();
         EditorGUILayout.PropertyField(texTrgP);
+        if (EditorGUI.EndChangeCheck())
+        {
+            // New texture target was chosen.
+            // Apply default values from first affected material.
+            T target = GetTarget(root);
+            foreach (Material mat in GetAffectedMaterials(target))
+            {
+                RefreshObject(root.serializedObject);
+                target.ApplyFromMaterial(mat);
+                break;
+            }
+        }
 
         if (texTrgP.enumValueIndex == (int)T.TextureTarget.Asset)
         {
@@ -123,14 +138,16 @@ public class RendererBehaviourDrawer : PropertyDrawer
         }
         else
         {
-            // Otherwise, draw a Vector2 for Tiling or Offset
+            // Otherwise, draw a Vector4 for Tiling or Offset
             SerializedProperty vecP = root.FindPropertyRelative(T.VEC_FIELD);
 
             // Ensure to not overwrite z and w components of 'vecP'
-            Vector2 vec2 =
-                EditorGUILayout.Vector2Field(ValueLabel, vecP.vector4Value);
-            Vector4 vec4 = vecP.vector4Value;
-            vecP.vector4Value = new Vector4(vec2.x, vec2.y, vec4.z, vec4.w);
+            // vecP.vector4Value = EditorGUILayout.Vector4Field(ValueLabel, vecP.vector4Value);
+
+            Rect rect = EditorGUILayout.GetControlRect(
+                hasLabel: true,
+                height: EditorGUIUtility.singleLineHeight * 2 + EditorGUIUtility.standardVerticalSpacing);
+            vecP.vector4Value = MaterialEditor.TextureScaleOffsetProperty(rect, vecP.vector4Value);
         }
     }
 
@@ -140,7 +157,7 @@ public class RendererBehaviourDrawer : PropertyDrawer
     protected void DrawTextureAssetField(SerializedProperty root)
     {
         SerializedProperty texP = root.FindPropertyRelative(T.TEX_FIELD);
-        EditorGUILayout.PropertyField(texP, ValueLabel);
+        EditorGUILayout.PropertyField(texP, new GUIContent(texP.displayName, texP.tooltip));
 
         // The UI would be nicer here if we would render an object field
         // of the Texture subclass the chosen property actually expects.
@@ -161,17 +178,22 @@ public class RendererBehaviourDrawer : PropertyDrawer
     }
 
     /// <summary>
-    /// Returns the materials the currently drawn behaviour manipulates.
-    /// Never returns null.
+    /// Get the currently drawn behaviour
     /// </summary>
-    protected IEnumerable<Material> GetAffectedMaterials(SerializedProperty property)
+    protected T GetTarget(SerializedProperty root)
     {
         // Object whose inspector is currently drawn.
-        UnityEngine.Object targetObject = property.serializedObject.targetObject;
+        UnityEngine.Object targetObject = root.serializedObject.targetObject;
+        return fieldInfo.GetValue(targetObject) as T;
+    }
 
-        // Object this drawer renders. It's a field of 'targetObject'.
-        if (fieldInfo.GetValue(targetObject) is IMaterialProvider target
-                && target.Materials != null)
+    /// <summary>
+    /// Returns the materials the given behaviour manipulates.
+    /// Never returns null.
+    /// </summary>
+    protected IEnumerable<Material> GetAffectedMaterials(T target)
+    {
+        if (target?.Materials != null)
             return target.Materials;
 
         // Ensure that the timeline rebuilds the graph, so that
@@ -179,6 +201,13 @@ public class RendererBehaviourDrawer : PropertyDrawer
         TimelineEditor.Refresh(RefreshReason.ContentsModified);
         return new Material[0];
     }
+
+    /// <summary>
+    /// Returns the materials the currently drawn behaviour manipulates.
+    /// Never returns null.
+    /// </summary>
+    protected IEnumerable<Material> GetAffectedMaterials(SerializedProperty root)
+        => GetAffectedMaterials(GetTarget(root));
 
     /// <summary>
     /// Draw a searchable dropdown from which to chose the name of the shader
@@ -211,8 +240,11 @@ public class RendererBehaviourDrawer : PropertyDrawer
     /// </summary>
     protected void DrawMaterialPropertyList(Rect position, SerializedProperty root)
     {
+        // Object this drawer renders. It's a field of 'targetObject'.
+        T target = GetTarget(root);
+
         // Materials to list properties of
-        IEnumerable<Material> materials = GetAffectedMaterials(root);
+        IEnumerable<Material> materials = GetAffectedMaterials(target);
 
         // Collect all unique property names to fill list with
         var propertyNames = new HashSet<string>();
@@ -240,23 +272,9 @@ public class RendererBehaviourDrawer : PropertyDrawer
                     // Shader doesn't have any property with selected name
                     continue;
 
-                Vector4 vec = Vector4.one;
-                U propType = shader.GetPropertyType(propIndex);
-                if (propType == U.Range)
-                {
-                    // Pack range limits into unused vector components
-                    Vector2 limits = shader.GetPropertyRangeLimits(propIndex);
-                    vec.y = limits.x;
-                    vec.z = limits.y;
-                }
-
-                var nameProp = root.FindPropertyRelative(T.NAME_FIELD);
-                var typeProp = root.FindPropertyRelative(T.TYPE_FIELD);
-                var vecProp  = root.FindPropertyRelative(T.VEC_FIELD);
-
-                nameProp.stringValue = entry;
-                typeProp.enumValueIndex = (int)propType;
-                vecProp.vector4Value = vec;
+                target.propertyName = entry;
+                target.propertyType = shader.GetPropertyType(propIndex);
+                target.ApplyFromMaterial(mat);
 
                 // Ensure selected entry is triggering updates immediately
                 RefreshObject(root.serializedObject);

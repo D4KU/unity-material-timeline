@@ -29,8 +29,7 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
     public enum TextureTarget
     {
         Asset,
-        Tiling,
-        Offset
+        TilingOffset
     }
 
     /// <summary>
@@ -65,14 +64,12 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
             {
                 Shader shader = Shader.Find("Hidden/MaterialTrackTexLerp");
                 if (shader == null)
-                {
                     Debug.LogWarning("'TextureBlend' shader could not be found. " +
                         "To ensure it's included in the build, add it to the " +
                         "list of always included shaders under ProjectSettings " +
                         "> Graphics.");
-                    return null;
-                }
-                blendMaterial = new Material(shader);
+                else
+                    blendMaterial = new Material(shader);
             }
             return blendMaterial;
         }
@@ -129,11 +126,8 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
                     case TextureTarget.Asset:
                         texture = source.GetTexture(propertyName);
                         break;
-                    case TextureTarget.Tiling:
-                        vector = source.GetTextureScale(propertyName);
-                        break;
-                    case TextureTarget.Offset:
-                        vector = source.GetTextureOffset(propertyName);
+                    case TextureTarget.TilingOffset:
+                        vector = source.GetTextureScaleOffset(propertyName);
                         break;
                 }
                 break;
@@ -162,11 +156,8 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
                             texture = vector.ToTexture2D();
                         target.SetTexture(propertyName, texture);
                         break;
-                    case TextureTarget.Tiling:
-                        target.SetTextureScale(propertyName, vector);
-                        break;
-                    case TextureTarget.Offset:
-                        target.SetTextureOffset(propertyName, vector);
+                    case TextureTarget.TilingOffset:
+                        target.SetTextureScaleOffset(propertyName, vector);
                         break;
                 }
                 break;
@@ -179,28 +170,40 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
     /// <summary>
     /// Set this behaviour's value from the given material
     /// </summary>
-    public void ApplyFromMaterial(Material source)
+    public virtual void ApplyFromMaterial(Material source)
     {
         if (!HasProperty(source))
             return;
 
+        Shader shader = source.shader;
+        int propIndex  = shader.FindPropertyIndex(propertyName);
         switch (propertyType)
         {
             case Spt.Float:
-            case Spt.Range:
                 vector.x = source.GetFloat(propertyName);
+                break;
+            case Spt.Range:
+                Vector2 limits = shader.GetPropertyRangeLimits(propIndex);
+
+                // Pack range limits into unused vector components
+                vector.x = source.GetFloat(propertyName);
+                vector.y = limits.x;
+                vector.z = limits.y;
                 break;
             case Spt.Texture:
                 switch (textureTarget)
                 {
                     case TextureTarget.Asset:
                         texture = source.GetTexture(propertyName);
+                        // default is a white texture mode
+                        string defaultName =
+                            shader.GetPropertyTextureDefaultName(propIndex);
+                        vector = defaultName.TextureDefaultNameToColor();
                         break;
-                    case TextureTarget.Tiling:
-                        vector = source.GetTextureScale(propertyName);
-                        break;
-                    case TextureTarget.Offset:
-                        vector = source.GetTextureOffset(propertyName);
+                    case TextureTarget.TilingOffset:
+                        Vector2 scale = source.GetTextureScale(propertyName);
+                        Vector2 offset = source.GetTextureOffset(propertyName);
+                        vector = new Vector4(scale.x, scale.y, offset.x, offset.y);
                         break;
                 }
                 break;

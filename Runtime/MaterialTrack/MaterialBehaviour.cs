@@ -28,7 +28,7 @@ public class MaterialBehaviour : RendererBehaviour
     /// <summary>
     /// Set this behaviour's value from the given material
     /// </summary>
-    new public void ApplyFromMaterial(Material source)
+    public override void ApplyFromMaterial(Material source)
     {
         if (materialMode)
             material = new Material(source);
@@ -63,11 +63,11 @@ public class MaterialBehaviour : RendererBehaviour
                     case TextureTarget.Asset:
                         ApplyToTexture(target);
                         break;
-                    case TextureTarget.Tiling:
+                    case TextureTarget.TilingOffset:
                         target.SetTextureScale(propertyName, vector);
-                        break;
-                    case TextureTarget.Offset:
-                        target.SetTextureOffset(propertyName, vector);
+                        target.SetTextureOffset(
+                            propertyName,
+                            new Vector2(vector.z, vector.w));
                         break;
                 }
                 break;
