@@ -109,5 +109,15 @@ public class MaterialBehaviour : RendererBehaviour
             base.Lerp(a, b, t);
         }
     }
+
+    /// <inheritdoc cref="RendererBehaviour.IsBlendableWith"/>
+    public override bool IsBlendableWith(RendererBehaviour other)
+    {
+        // If this behaviour is in material mode, it is only blendable
+        // with another MaterialBehaviour in material mode.
+        if (materialMode && other is MaterialBehaviour mb && mb.materialMode)
+            return true;
+        return base.IsBlendableWith(other);
+    }
 }
 }

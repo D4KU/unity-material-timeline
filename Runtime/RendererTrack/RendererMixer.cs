@@ -150,8 +150,7 @@ public class RendererMixer : PlayableBehaviour, IMaterialProvider
                 // two active clips at one specific frame.
                 var next = GetBehaviour(playable, clipIndex + 1);
 
-                if (clipData.propertyType == next.propertyType &&
-                    clipData.propertyName == next.propertyName)
+                if (clipData.IsBlendableWith(next))
                 {
                     // Properties of blended clips match.
                     // Mix current clip with next clip.

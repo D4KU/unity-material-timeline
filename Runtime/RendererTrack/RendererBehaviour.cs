@@ -245,5 +245,18 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
         Graphics.Blit(a, result, blendMaterial);
         return result;
     }
+
+    /// <summary>
+    /// Returns true if it is possible to lerp between this and the given
+    /// behaviour.
+    /// </summary>
+    public virtual bool IsBlendableWith(RendererBehaviour other)
+        => other != null
+        && propertyName == other.propertyName
+        && propertyType == other.propertyType
+        && (propertyType != Spt.Texture || textureTarget == other.textureTarget);
+        // If two behaviours aren't textures, they are blendable if their
+        // property names and types match. If they are textures, they must
+        // also have identical texture targets.
 }
 }

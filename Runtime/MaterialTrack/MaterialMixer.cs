@@ -109,8 +109,7 @@ public class MaterialMixer : PlayableBehaviour, IMaterialProvider
                 // Two clips are blended
                 var next = GetBehaviour(playable, i + 1);
 
-                if (data.propertyType == next.propertyType &&
-                    data.propertyName == next.propertyName)
+                if (data.IsBlendableWith(next))
                 {
                     // Properties of blended clips match.
                     // Mix current clip with next clip.
