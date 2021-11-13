@@ -1,10 +1,10 @@
-Shader "Hidden/MaterialTrackTexLerp"
+Shader "Hidden/MaterialTrack/TextureBlend"
 {
     Properties
     {
         _MainTex ("Texture", 2D) = "white" {}
-        _SideTex ("Texture", 2D) = "white" {}
-        _weight ("weight", Range(0,1)) = 1
+        [NoScaleOffset] _SideTex ("Texture", 2D) = "white" {}
+        _Weight ("Weight", Range(0,1)) = 0
     }
     SubShader
     {
@@ -31,13 +31,12 @@ Shader "Hidden/MaterialTrackTexLerp"
                 float4 vertex : SV_POSITION;
             };
 
+            CBUFFER_START(UnityPerMaterial)
             sampler2D _MainTex;
-            float4 _MainTex_ST;
-
             sampler2D _SideTex;
-            float4 _SideTex_ST;
-
-            float _weight;
+            float4 _MainTex_ST;
+            float _Weight;
+            CBUFFER_END
 
             v2f vert (appdata v)
             {
@@ -51,7 +50,7 @@ Shader "Hidden/MaterialTrackTexLerp"
             {
                 fixed4 a = tex2D(_MainTex, i.uv);
                 fixed4 b = tex2D(_SideTex, i.uv);
-                return (1 - _weight) * a + _weight * b;
+                return (1 - _Weight) * a + _Weight * b;
             }
             ENDCG
         }

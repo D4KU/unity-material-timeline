@@ -55,14 +55,20 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
     /// <inheritdoc cref="IMaterialProvider.Materials"/>
     public IEnumerable<Material> Materials => provider?.Materials;
 
+    /// To not search for a shader every frame that we'll never find.
+    static bool triedFindShader;
+
+    /// <inheritdoc cref="BlendMaterial"/>
     static Material blendMaterial;
+
+    /// Material used to blend textures
     public static Material BlendMaterial
     {
         get
         {
-            if (blendMaterial == null)
+            if (blendMaterial == null && !triedFindShader)
             {
-                Shader shader = Shader.Find("Hidden/MaterialTrackTexLerp");
+                Shader shader = Shader.Find("Hidden/MaterialTrack/TextureBlend");
                 if (shader == null)
                     Debug.LogWarning("'TextureBlend' shader could not be found. " +
                         "To ensure it's included in the build, add it to the " +
@@ -70,6 +76,7 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
                         "> Graphics.");
                 else
                     blendMaterial = new Material(shader);
+                triedFindShader = true;
             }
             return blendMaterial;
         }
@@ -229,7 +236,7 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
         // Set 'b' and 't' in material for blending.
         // 'a' is set by Graphics.Blit() to the '_MaintTex' property.
         blendMaterial.SetTexture("_SideTex", b);
-        blendMaterial.SetFloat("_weight", t);
+        blendMaterial.SetFloat("_Weight", t);
 
         RenderTexture result = new RenderTexture(
             width:  (int)Mathf.Lerp(a.width,  b.width,  t),
