@@ -1,3 +1,9 @@
+<div align="center">
+
+![](https://github.com/D4KU/unity-material-timeline/blob/master/Media%7E/MaterialTimeline.gif)
+
+</div>
+
 This is a *Unity Timeline* extension to animate and blend material properties.
 It consists of two custom tracks:
 
