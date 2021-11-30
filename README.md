@@ -22,7 +22,7 @@ It consists of two custom tracks:
 | Clip extrapolation                 | &check;        | &check;        |
 | Set/Blend Float/Range/Color/Vector | &check;        | &check;        |
 | Set/Blend* Texture2D/RenderTexture | &check;        | &check;        |
-| Set Texture Tiling/Offset          | &check;        | &check;        |
+| Set/Blend Texture Tiling/Offset    | &check;        | &check;        |
 | Set Texture3D                      | &check;        | &check;        |
 | Blend Texture3D                    | &cross;        | &cross;        |
 | Set CubeMap                        | &check;        | &check;        |
@@ -32,7 +32,7 @@ It consists of two custom tracks:
 All blending can be done between two clips, or with the original value set
 in the material.
 
-\* See [Use texture blending](#use-texture-blending) for how to active this
+\* See [Use texture blending](#use-texture-blending) for how to activate this
 feature.<br/>
 \** Just uses `Material.Lerp` internally, so it's not able to blend textures.
 
