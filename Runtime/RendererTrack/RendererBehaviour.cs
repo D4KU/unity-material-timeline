@@ -56,7 +56,10 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
     public IEnumerable<Material> Materials => provider?.Materials;
 
     /// To not search for a shader every frame that we'll never find.
+    /// Only considered in builds.
+#if !UNITY_EDITOR
     static bool triedFindShader;
+#endif
 
     /// <inheritdoc cref="BlendMaterial"/>
     static Material blendMaterial;
@@ -66,7 +69,11 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
     {
         get
         {
-            if (blendMaterial == null && !triedFindShader)
+            if (blendMaterial == null
+#if !UNITY_EDITOR
+            && !triedFindShader
+#endif
+                )
             {
                 Shader shader = Shader.Find("Hidden/MaterialTrack/TextureBlend");
                 if (shader == null)
@@ -76,7 +83,9 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
                         "> Graphics.");
                 else
                     blendMaterial = new Material(shader);
+#if !UNITY_EDITOR
                 triedFindShader = true;
+#endif
             }
             return blendMaterial;
         }
