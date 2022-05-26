@@ -29,6 +29,13 @@ public class RendererMixer : PlayableBehaviour, IMaterialProvider
     Renderer boundRenderer;
 
     /// <summary>
+    /// Stores blocks present before the creation of the mixer so it can layer
+    /// its properties on top and reset them on destruction. One entry per
+    /// available material.
+    /// </summary>
+    MaterialPropertyBlock[] initialBlocks;
+
+    /// <summary>
     /// All materials the bound renderer references
     /// </summary>
     Material[] AvailableMaterials => boundRenderer.sharedMaterials;
@@ -61,7 +68,7 @@ public class RendererMixer : PlayableBehaviour, IMaterialProvider
     public override void OnPlayableDestroy(Playable playable)
     {
         if (boundRenderer != null)
-            ClearAllSlots();
+            ResetAllSlots();
     }
 
     public override void ProcessFrame(
@@ -81,12 +88,16 @@ public class RendererMixer : PlayableBehaviour, IMaterialProvider
         if (materialCount == 0)
             return;
 
-        bool firstMixer = MaterialLayerMixer.frameClean;
-        if (firstMixer)
+        // Is this mixer mixing the first track layer?
+        if (MaterialLayerMixer.frameClean)
         {
-            // this mixer is mixing the first track layer
             MaterialLayerMixer.frameClean = false;
-            ClearSlots();
+
+            // True only in the very first call since creation of the mixer
+            if (initialBlocks == null)
+                CacheInitialBlocks();
+            else
+                ResetTargetSlots();
         }
 
         // Get clips contributing to the current frame (weight > 0)
@@ -120,18 +131,22 @@ public class RendererMixer : PlayableBehaviour, IMaterialProvider
 
         for (int slotIndex = startSlot; slotIndex < endSlot; slotIndex++)
         {
-            // The property block to applied to the current slot index.
+            // The property block to apply to the current slot index
             var block = new MaterialPropertyBlock();
 
-            // The mixed property value to be applied to the property
-            // block at the current slot index.
+            // The mixed property value to apply to the property block at the
+            // current slot index.
             var mix = new RendererBehaviour(clipData);
 
-            // If another track mixer already ran before this one in the
-            // current frame, than we use his block as starting point and
-            // further mix it.
-            if (!firstMixer)
-                boundRenderer.GetPropertyBlock(block, slotIndex);
+            // Use blocks already present as starting point and mix to it
+            boundRenderer.GetPropertyBlock(block, slotIndex);
+
+            // Only consider the per-Renderer block if there is no
+            // slot-specific one. This mimics Unity's general behaviour:
+            // the property set of a per-Renderer block isn't extended by an
+            // index-specific block, it is hidden.
+            if (block.isEmpty)
+                boundRenderer.GetPropertyBlock(block);
 
             if (activeClips.Length == 1)
             {
@@ -214,10 +229,31 @@ public class RendererMixer : PlayableBehaviour, IMaterialProvider
         => index >= 0 && index < MaterialCount;
 
     /// <summary>
+    /// Stores <see cref="MaterialPropertyBlock"/>s present before the
+    /// creation of the mixer so it can layer its properties on top.
+    /// </summary>
+    void CacheInitialBlocks()
+    {
+        int count = MaterialCount;
+        initialBlocks = new MaterialPropertyBlock[count];
+        var block = new MaterialPropertyBlock();
+
+        for (int i = 0; i < count; i++)
+        {
+            boundRenderer.GetPropertyBlock(block, i);
+            if (block.isEmpty)
+                continue;
+
+            initialBlocks[i] = block;
+            block = new MaterialPropertyBlock();
+        }
+    }
+
+    /// <summary>
     /// Remove the material property block from all materials slots of
     /// the bound renderer that this mixer targets.
     /// </summary>
-    void ClearSlots()
+    void ResetTargetSlots()
     {
         // If the user has updated the material index since the last frame,
         // we need to clear the newly AND previously set slot.
@@ -227,9 +263,11 @@ public class RendererMixer : PlayableBehaviour, IMaterialProvider
             // If the current index is out of bounds, consider it to
             // target all slots.
             if (IsMaterialIndexValid(materialIndex))
-                boundRenderer.SetPropertyBlock(null, materialIndex);
+                boundRenderer.SetPropertyBlock(
+                    initialBlocks[materialIndex],
+                    materialIndex);
             else
-                ClearAllSlots();
+                ResetAllSlots();
         }
         else
         {
@@ -239,25 +277,29 @@ public class RendererMixer : PlayableBehaviour, IMaterialProvider
             if (IsMaterialIndexValid(materialIndex) &&
                 IsMaterialIndexValid(oldMaterialIndex))
             {
-                boundRenderer.SetPropertyBlock(null, materialIndex);
-                boundRenderer.SetPropertyBlock(null, oldMaterialIndex);
+                boundRenderer.SetPropertyBlock(
+                    initialBlocks[materialIndex],
+                    materialIndex);
+                boundRenderer.SetPropertyBlock(
+                    initialBlocks[oldMaterialIndex],
+                    oldMaterialIndex);
             }
             else
-                ClearAllSlots();
+                ResetAllSlots();
 
             oldMaterialIndex = materialIndex;
         }
     }
 
     /// <summary>
-    /// Remove the material property block from all materials slots of
-    /// the bound renderer.
+    /// Reassign property blocks present before creation of this mixer,
+    /// delete all others.
     /// </summary>
-    void ClearAllSlots()
+    void ResetAllSlots()
     {
         int end = MaterialCount;
         for (int i = 0; i < end; i++)
-            boundRenderer.SetPropertyBlock(null, i);
+            boundRenderer.SetPropertyBlock(initialBlocks?[i], i);
     }
 }
 }
