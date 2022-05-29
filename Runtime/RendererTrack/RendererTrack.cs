@@ -9,7 +9,8 @@ namespace MaterialTrack
 [TrackClipType(typeof(RendererClip))]
 public class RendererTrack : TrackAsset, ILayerable
 {
-    public RendererMixer template = new RendererMixer();
+    public const string EMPTY_SLOT_NAME = "Empty";
+    public RendererMixer template;
 
     /// <inheritdoc cref="ILayerable.CreateLayerMixer"/>
     public Playable CreateLayerMixer(
@@ -47,10 +48,8 @@ public class RendererTrack : TrackAsset, ILayerable
     public static string BuildClipName(RendererBehaviour data)
     {
         if (string.IsNullOrWhiteSpace(data.propertyName))
-            return "Empty";
-        else
-            return $"{data.propertyName} [{data.propertyType}]";
-
+            return EMPTY_SLOT_NAME;
+        return $"{data.propertyName} [{data.propertyType}]";
     }
 }
 }
