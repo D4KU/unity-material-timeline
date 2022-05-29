@@ -23,28 +23,22 @@ public class SlotTrack : TrackAsset, ILayerable
     public override Playable CreateTrackMixer(
             PlayableGraph graph, GameObject go, int inputCount)
     {
-        InitializeClips();
         InitializeTemplate(go);
+        InitializeClips();
         return ScriptPlayable<SlotMixer>.Create(graph, template, inputCount);
     }
 
     void InitializeTemplate(GameObject go)
     {
-        if (!(go.GetComponent<PlayableDirector>()
-                .GetGenericBinding(isSubTrack ? parent : this)
-                is Renderer renderer))
+        if (!this.TryGetBinding(go, out Renderer renderer))
             return;
 
         template.boundRenderer = renderer;
         template.initialMaterials = renderer.sharedMaterials.ToArray();
-        int materialCount = template.initialMaterials.Length;
-
-        if (materialCount != template.mask.Length)
-        {
-            Array.Resize(ref template.mask, materialCount);
-            for (int i = template.mask.Length - 1; i < materialCount; i++)
-                template.mask[i] = true;
-        }
+        ExtensionMethods.ResizeArray(
+            array: ref template.mask,
+            newSize: template.initialMaterials.Length,
+            defaultValue: true);
     }
 
     void InitializeClips()

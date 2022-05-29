@@ -1,5 +1,10 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
+using UnityEngine.Playables;
 using UnityEngine.Rendering;
+using UnityEngine.Timeline;
 
 namespace MaterialTrack
 {
@@ -98,5 +103,30 @@ public static class ExtensionMethods
             "bump"  => new Color(.5f, .5f, 1f, 1f),
             _       => Color.white,
         };
+
+    public static bool TryGetBinding<T>(
+        this TrackAsset track,
+        GameObject owner,
+        out T binding) where T : class
+    {
+        var key = track.isSubTrack ? track.parent : track;
+        binding = owner.GetComponent<PlayableDirector>()
+            .GetGenericBinding(key) as T;
+        return binding != null;
+    }
+
+    public static void ResizeArray<T>(
+        ref T[] array,
+        int newSize,
+        T defaultValue = default)
+    {
+        int oldSize = array.Length;
+        if (newSize == oldSize)
+            return;
+
+        Array.Resize(ref array, newSize);
+        for (int i = oldSize - 1; i < newSize; i++)
+            array[i] = defaultValue;
+    }
 }
 }

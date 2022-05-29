@@ -8,25 +8,16 @@ namespace MaterialTrack
 [System.Serializable]
 public class RendererMixer : PlayableBehaviour, IMaterialProvider
 {
-    /// Used for serialization in this class's inspector drawer
-    public const string MAT_IDX_FIELD = nameof(materialIndex);
-
-    const int DEFAULT_MATERIAL_INDEX = -1;
-
-    [Tooltip("If non-negative, specifies one of the bound renderer's " +
-        "materials to override exclusively. If negative, all materials " +
-        "are overridden.")]
-    public int materialIndex = DEFAULT_MATERIAL_INDEX;
-
     /// <summary>
-    /// Helper to notice when user changes serialized material index.
+    /// Assumed to be of equal length as <see cref="AvailableMaterials"/>.
+    /// Stores for each slot whether to apply a property block to it.
     /// </summary>
-    int oldMaterialIndex = DEFAULT_MATERIAL_INDEX;
+    public bool[] mask;
 
     /// <summary>
     /// Renderer manipulated by the track
     /// </summary>
-    Renderer boundRenderer;
+    [HideInInspector] public Renderer boundRenderer;
 
     /// <summary>
     /// Stores blocks present before the creation of the mixer so it can layer
@@ -41,11 +32,6 @@ public class RendererMixer : PlayableBehaviour, IMaterialProvider
     Material[] AvailableMaterials => boundRenderer.sharedMaterials;
 
     /// <summary>
-    /// The number of materials the bound renderer references
-    /// </summary>
-    int MaterialCount => AvailableMaterials.Length;
-
-    /// <summary>
     /// Materials operated on
     /// </summary>
     public IEnumerable<Material> Materials
@@ -54,21 +40,14 @@ public class RendererMixer : PlayableBehaviour, IMaterialProvider
         {
             if (boundRenderer == null)
                 return new Material[0];
-
-            if (IsMaterialIndexValid(materialIndex))
-                return new Material[]
-                {
-                    AvailableMaterials[materialIndex]
-                };
-
-            return AvailableMaterials;
+            return AvailableMaterials.Where((_, i) => mask[i]);
         }
     }
 
     public override void OnPlayableDestroy(Playable playable)
     {
         if (boundRenderer != null)
-            ResetAllSlots();
+            ResetSlots();
     }
 
     public override void ProcessFrame(
@@ -76,7 +55,6 @@ public class RendererMixer : PlayableBehaviour, IMaterialProvider
         FrameData info,
         object playerData)
     {
-        boundRenderer = playerData as Renderer;
         if (boundRenderer == null)
             return;
 
@@ -84,7 +62,7 @@ public class RendererMixer : PlayableBehaviour, IMaterialProvider
         if (inputCount == 0)
             return;
 
-        int materialCount = MaterialCount;
+        int materialCount = AvailableMaterials.Length;
         if (materialCount == 0)
             return;
 
@@ -97,7 +75,7 @@ public class RendererMixer : PlayableBehaviour, IMaterialProvider
             if (initialBlocks == null)
                 CacheInitialBlocks();
             else
-                ResetTargetSlots();
+                ResetSlots();
         }
 
         // Get clips contributing to the current frame (weight > 0)
@@ -119,18 +97,11 @@ public class RendererMixer : PlayableBehaviour, IMaterialProvider
         // Blocks that will be created during the process
         var blocks = new MaterialPropertyBlock[materialCount];
 
-        // If the user-entered material slot index is valid, we only have
-        // to operate on this one slot, otherwise on all.
-        int startSlot = 0;
-        int endSlot = materialCount;
-        if (IsMaterialIndexValid(materialIndex))
+        for (int slotIndex = 0; slotIndex < materialCount; slotIndex++)
         {
-            startSlot = materialIndex;
-            endSlot   = materialIndex + 1;
-        }
+            if (!mask[slotIndex])
+                continue;
 
-        for (int slotIndex = startSlot; slotIndex < endSlot; slotIndex++)
-        {
             // The property block to apply to the current slot index
             var block = new MaterialPropertyBlock();
 
@@ -222,19 +193,12 @@ public class RendererMixer : PlayableBehaviour, IMaterialProvider
     }
 
     /// <summary>
-    /// Returns true if the given material index is available in the bound
-    /// renderer.
-    /// </summary>
-    bool IsMaterialIndexValid(int index)
-        => index >= 0 && index < MaterialCount;
-
-    /// <summary>
     /// Stores <see cref="MaterialPropertyBlock"/>s present before the
     /// creation of the mixer so it can layer its properties on top.
     /// </summary>
     void CacheInitialBlocks()
     {
-        int count = MaterialCount;
+        int count = AvailableMaterials.Length;
         initialBlocks = new MaterialPropertyBlock[count];
         var block = new MaterialPropertyBlock();
 
@@ -250,54 +214,15 @@ public class RendererMixer : PlayableBehaviour, IMaterialProvider
     }
 
     /// <summary>
-    /// Remove the material property block from all materials slots of
-    /// the bound renderer that this mixer targets.
-    /// </summary>
-    void ResetTargetSlots()
-    {
-        // If the user has updated the material index since the last frame,
-        // we need to clear the newly AND previously set slot.
-        if (oldMaterialIndex == materialIndex)
-        {
-            // Material index didn't update
-            // If the current index is out of bounds, consider it to
-            // target all slots.
-            if (IsMaterialIndexValid(materialIndex))
-                boundRenderer.SetPropertyBlock(
-                    initialBlocks[materialIndex],
-                    materialIndex);
-            else
-                ResetAllSlots();
-        }
-        else
-        {
-            // Material index updated
-            // If the index was or is out of bounds, consider it to
-            // target all slots.
-            if (IsMaterialIndexValid(materialIndex) &&
-                IsMaterialIndexValid(oldMaterialIndex))
-            {
-                boundRenderer.SetPropertyBlock(
-                    initialBlocks[materialIndex],
-                    materialIndex);
-                boundRenderer.SetPropertyBlock(
-                    initialBlocks[oldMaterialIndex],
-                    oldMaterialIndex);
-            }
-            else
-                ResetAllSlots();
-
-            oldMaterialIndex = materialIndex;
-        }
-    }
-
-    /// <summary>
     /// Reassign property blocks present before creation of this mixer,
     /// delete all others.
     /// </summary>
-    void ResetAllSlots()
+    void ResetSlots()
     {
-        int end = MaterialCount;
+        // In theory we should only reset slots that are not masked out,
+        // but that proved difficult when user just changed the mask.
+        // I deemed this not worth the additional code complexity.
+        int end = AvailableMaterials.Length;
         for (int i = 0; i < end; i++)
             boundRenderer.SetPropertyBlock(initialBlocks?[i], i);
     }

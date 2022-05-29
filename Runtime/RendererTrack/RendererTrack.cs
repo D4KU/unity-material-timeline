@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.Playables;
 using UnityEngine.Timeline;
@@ -22,9 +23,22 @@ public class RendererTrack : TrackAsset, ILayerable
     public override Playable CreateTrackMixer(
         PlayableGraph graph, GameObject go, int inputCount)
     {
+        InitializeTemplate(go);
         var mixer = ScriptPlayable<RendererMixer>.Create(graph, template, inputCount);
         InitializeClips(mixer.GetBehaviour());
         return mixer;
+    }
+
+    void InitializeTemplate(GameObject go)
+    {
+        if (!this.TryGetBinding(go, out Renderer renderer))
+            return;
+
+        template.boundRenderer = renderer;
+        ExtensionMethods.ResizeArray(
+            array: ref template.mask,
+            newSize: renderer.sharedMaterials.Length,
+            defaultValue: true);
     }
 
     void InitializeClips(IMaterialProvider provider)
