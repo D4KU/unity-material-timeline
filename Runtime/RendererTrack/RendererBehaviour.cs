@@ -206,6 +206,10 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
                         break;
                 }
                 break;
+            case Spt.Color:
+                // Use SetColor() to apply gamma correction in HDRP
+                target.SetColor(propertyName, vector);
+                break;
             default:
                 target.SetVector(propertyName, vector);
                 break;
