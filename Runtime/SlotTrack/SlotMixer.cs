@@ -29,6 +29,9 @@ public class SlotMixer : PlayableBehaviour
         FrameData info,
         object playerData)
     {
+        if (initialMaterials == null)
+            return;
+
         // Reinitialize shared state with other mixers if we are the first one
         // to run this frame
         SlotLayerMixer.overrides ??= initialMaterials.ToArray();

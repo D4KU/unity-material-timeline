@@ -120,12 +120,18 @@ public static class ExtensionMethods
         int newSize,
         T defaultValue = default)
     {
-        int oldSize = array.Length;
-        if (newSize == oldSize)
-            return;
+        int oldSize = 0;
+        if (array == null)
+            array = new T[newSize];
+        else
+        {
+            oldSize = array.Length;
+            if (newSize == oldSize)
+                return;
+            Array.Resize(ref array, newSize);
+        }
 
-        Array.Resize(ref array, newSize);
-        for (int i = oldSize - 1; i < newSize; i++)
+        for (int i = Math.Max(oldSize - 1, 0); i < newSize; i++)
             array[i] = defaultValue;
     }
 }
