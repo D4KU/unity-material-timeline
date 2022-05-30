@@ -139,11 +139,11 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
             case Spt.Texture:
                 switch (textureTarget)
                 {
-                    case TextureTarget.Asset:
-                        texture = source.GetTexture(propertyName);
-                        break;
                     case TextureTarget.TilingOffset:
                         vector = source.GetTextureScaleOffset(propertyName);
+                        break;
+                    default:
+                        texture = source.GetTexture(propertyName);
                         break;
                 }
                 break;
@@ -151,6 +151,35 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
                 vector = source.GetVector(propertyName);
                 break;
         }
+    }
+
+    /// <summary>
+    /// Returns true if the given property block contains the property set
+    /// in this behaviour
+    /// </summary>
+    public bool ContainsPropertyOf(MaterialPropertyBlock block)
+    {
+#if UNITY_2021_1_OR_NEWER
+        return block.HasProperty(propertyName);
+#else
+        switch (propertyType)
+        {
+            case Spt.Float:
+            case Spt.Range:
+                return block.GetFloat(propertyName) != 0f;
+            case Spt.Texture:
+                switch (textureTarget)
+                {
+                    case TextureTarget.TilingOffset:
+                        return block.GetTextureScaleOffset(propertyName) !=
+                            Vector4.zero;
+                    default:
+                        return block.GetTexture(propertyName) != null;
+                }
+            default:
+                return block.GetVector(propertyName) != Vector4.zero;
+        }
+#endif
     }
 
     /// <summary>

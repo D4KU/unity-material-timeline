@@ -182,14 +182,14 @@ public class RendererMixer : PlayableBehaviour, IMaterialProvider
         RendererBehaviour target,
         int fallbackMaterialIndex)
     {
-        if (source.isEmpty)
+        if (target.ContainsPropertyOf(source))
+            target.ApplyFromPropertyBlock(source);
+        else
         {
             Material material = AvailableMaterials[fallbackMaterialIndex];
             if (material != null)
                 target.ApplyFromMaterial(material);
         }
-        else
-            target.ApplyFromPropertyBlock(source);
     }
 
     /// <summary>
