@@ -33,6 +33,9 @@ public class RendererBehaviourDrawer : PropertyDrawer
             DrawValueProperty(property);
             RefreshObject(property.serializedObject);
         }
+
+        EditorGUILayout.PropertyField(
+            property.FindPropertyRelative(T.WEIGHT_MUL_FIELD));
     }
 
     /// <summary>

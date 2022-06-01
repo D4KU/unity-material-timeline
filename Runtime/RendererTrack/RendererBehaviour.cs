@@ -19,6 +19,7 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
     /// Used for serialization in this class's inspector drawer
     public const string TYPE_FIELD = nameof(propertyType);
     public const string NAME_FIELD = nameof(propertyName);
+    public const string WEIGHT_MUL_FIELD = nameof(weightMultiplier);
     public const string TEX_FIELD = nameof(texture);
     public const string VEC_FIELD = nameof(vector);
     public const string TEX_TARGET_FIELD = nameof(textureTarget);
@@ -42,6 +43,10 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
 
     [Tooltip("Type of the shader property to manipulate")]
     public Spt propertyType = Spt.Float;
+
+    [Range(0, 1)]
+    [Tooltip("Blend between clip value and underlying material value")]
+    public float weightMultiplier = 1;
 
     [Tooltip("Texture to assign to the shader property")]
     public Texture texture;

@@ -88,11 +88,11 @@ public class RendererMixer : PlayableBehaviour, IMaterialProvider
         // The index of the first found active clip of this frame
         int clipIndex = activeClips[0];
 
-        // Weight of the first active clip
-        float clipWeight = playable.GetInputWeight(clipIndex);
-
         // Data stored in the first active clip
         RendererBehaviour clipData = GetBehaviour(playable, clipIndex);
+
+        // Weight of the first active clip
+        float clipWeight = playable.GetInputWeight(clipIndex) * clipData.weightMultiplier;
 
         // Blocks that will be created during the process
         var blocks = new MaterialPropertyBlock[materialCount];
