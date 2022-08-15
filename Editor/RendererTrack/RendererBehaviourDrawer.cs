@@ -61,7 +61,12 @@ public class RendererBehaviourDrawer : PropertyDrawer
                 DrawTextureOptions(root);
                 break;
             case U.Color:
-                vecP.vector4Value = EditorGUILayout.ColorField(ValueLabel, vecVal);
+                vecP.vector4Value = EditorGUILayout.ColorField(
+                    label: ValueLabel,
+                    value: vecVal,
+                    showEyedropper: true,
+                    showAlpha: true,
+                    hdr: true);
                 break;
             case U.Vector:
                 EditorGUILayout.PropertyField(vecP, ValueLabel);
@@ -72,10 +77,10 @@ public class RendererBehaviourDrawer : PropertyDrawer
                 break;
             case U.Range:
                 vecVal.x = EditorGUILayout.Slider(
-                    ValueLabel,
-                    vecVal.x,
-                    vecVal.y,
-                    vecVal.z);
+                    label: ValueLabel,
+                    value: vecVal.x,
+                    leftValue: vecVal.y,
+                    rightValue: vecVal.z);
                 vecP.vector4Value = vecVal;
                 break;
         }
