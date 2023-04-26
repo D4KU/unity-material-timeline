@@ -85,7 +85,7 @@ public class MaterialBehaviour : RendererBehaviour
     {
         // Create a 2D texture from the set default color if behaviour has
         // no texture set
-        if (!texture)
+        if (texture == null)
             texture = vector.ToTexture2D();
 
         if (texture.dimension ==

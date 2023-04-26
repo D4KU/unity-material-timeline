@@ -6,7 +6,7 @@ namespace MaterialTrack
 {
 public class MaterialClip : PlayableAsset, ITimelineClipAsset
 {
-    public MaterialBehaviour template = new MaterialBehaviour();
+    public MaterialBehaviour template;
     public ClipCaps clipCaps => ClipCaps.Extrapolation | ClipCaps.Blending;
 
     public override Playable CreatePlayable(PlayableGraph graph, GameObject owner)

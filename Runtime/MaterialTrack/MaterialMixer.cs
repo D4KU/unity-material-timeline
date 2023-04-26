@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace MaterialTrack
 {
-public class MaterialMixer : PlayableBehaviour, IMaterialProvider
+public class MaterialMixer : PlayableBehaviour, IMixer
 {
     /// <summary>
     /// Material manipulated by the track
@@ -22,8 +22,13 @@ public class MaterialMixer : PlayableBehaviour, IMaterialProvider
     /// </summary>
     bool firstFrameHappened;
 
-    public IEnumerable<Material> Materials => boundMaterial == null ?
-        new Material[0] : new Material[] { boundMaterial };
+    readonly RenderTextureCache renderTextureCache = new RenderTextureCache();
+    readonly Texture2DCache texture2DCache = new Texture2DCache();
+
+    public RenderTextureCache RenderTextureCache => renderTextureCache;
+    public Texture2DCache Texture2DCache => texture2DCache;
+    public IEnumerable<Material> Materials => boundMaterial ?
+        new Material[] { boundMaterial } : new Material[0];
 
     public override void OnPlayableDestroy(Playable playable)
     {
@@ -34,7 +39,7 @@ public class MaterialMixer : PlayableBehaviour, IMaterialProvider
     void ResetMaterial()
     {
         // Restore original values
-        if (boundMaterial != null && defaultMaterial != null)
+        if (boundMaterial && defaultMaterial)
             boundMaterial.CopyPropertiesFromMaterial(defaultMaterial);
     }
 
@@ -77,64 +82,64 @@ public class MaterialMixer : PlayableBehaviour, IMaterialProvider
         }
 
         // Get clips contributing to the current frame (weight > 0)
-        var activeClips = from i in Enumerable.Range(0, inputCount)
-                          where playable.GetInputWeight(i) > 0f
-                          select i;
+        List<int> activeClips = Enumerable
+            .Range(0, inputCount)
+            .Where(i => playable.GetInputWeight(i) > 0)
+            .ToList();
 
-        // As long as a valid LayerMixer exists, there can be at most two
-        // active clips at one specific frame
-        foreach (int i in activeClips)
+        if (activeClips.Count == 0)
+            return;
+
+        // The index of the first found active clip of this frame
+        int clipIndex = activeClips[0];
+
+        // Data stored in the first active clip
+        var clipData = GetBehaviour(playable, clipIndex);
+
+        // Weight of the first active clip
+        float clipWeight = playable.GetInputWeight(clipIndex) * clipData.weightMultiplier;
+
+        // The mixed property value to be applied to the bound material
+        var mix = new MaterialBehaviour(clipData);
+
+        if (activeClips.Count > 1)
         {
-            // Weight of the first active clip
-            float weight = playable.GetInputWeight(i);
+            // Two clips are blended.
+            // As long as a valid LayerMixer exists, there can be at most two
+            // active clips at one specific frame
+            var next = GetBehaviour(playable, activeClips[1]);
 
-            // Data stored in the first active clip
-            var data = GetBehaviour(playable, i);
-
-            // The mixed property value to be applied to the bound material
-            var mix = new MaterialBehaviour(data);
-
-            if (activeClips.Count() == 1)
+            if (clipData.IsBlendableWith(next))
             {
-                if (weight < 1f)
-                {
-                    // The clip blends with the layer background.
-                    // Mix clip with default material.
-                    mix.ApplyFromMaterial(boundMaterial);
-                    mix.Lerp(mix, data, weight);
-                }
+                // Properties of blended clips match.
+                // Mix current clip with next clip.
+                mix.Lerp(next, clipData, clipWeight);
             }
             else
             {
-                // Two clips are blended
-                var next = GetBehaviour(playable, i + 1);
+                // Properties of blended clips don't match.
+                // Individually mix them them with bound material
 
-                if (data.IsBlendableWith(next))
-                {
-                    // Properties of blended clips match.
-                    // Mix current clip with next clip.
-                    mix.Lerp(next, data, weight);
-                }
-                else
-                {
-                    // Properties of blended clips don't match.
-                    // Individually mix them them with bound material
+                // Next clip
+                var mix2 = new MaterialBehaviour(next);
+                mix2.ApplyFromMaterial(boundMaterial);
+                mix2.Lerp(next, mix2, clipWeight);
+                mix2.ApplyToMaterial(boundMaterial);
 
-                    // Next clip
-                    var mix2 = new MaterialBehaviour(next);
-                    mix2.ApplyFromMaterial(boundMaterial);
-                    mix2.Lerp(next, mix2, weight);
-                    mix2.ApplyToMaterial(boundMaterial);
-
-                    // Current clip
-                    mix.ApplyFromMaterial(boundMaterial);
-                    mix.Lerp(mix, data, weight);
-                }
+                // Current clip
+                mix.ApplyFromMaterial(boundMaterial);
+                mix.Lerp(mix, clipData, clipWeight);
             }
-
-            mix.ApplyToMaterial(boundMaterial);
-            return;
         }
+        else if (clipWeight < 1)
+        {
+            // The clip blends with the layer background.
+            // Mix clip with default material.
+            mix.ApplyFromMaterial(boundMaterial);
+            mix.Lerp(mix, clipData, clipWeight);
+        }
+
+        mix.ApplyToMaterial(boundMaterial);
     }
 
     /// <summary>

@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.Playables;
 using UnityEngine.Rendering;
@@ -133,6 +131,19 @@ public static class ExtensionMethods
 
         for (int i = Math.Max(oldSize - 1, 0); i < newSize; i++)
             array[i] = defaultValue;
+    }
+
+    /// <summary>
+    /// Destroy working inside and outside Play mode
+    /// </summary>
+    public static void SafeDestroy(this UnityEngine.Object o)
+    {
+#if UNITY_EDITOR
+        if (!Application.isPlaying)
+            UnityEngine.Object.DestroyImmediate(o);
+        else
+#endif
+            UnityEngine.Object.Destroy(o);
     }
 }
 }

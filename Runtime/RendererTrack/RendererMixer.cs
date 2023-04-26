@@ -6,7 +6,7 @@ using System.Collections.Generic;
 namespace MaterialTrack
 {
 [System.Serializable]
-public class RendererMixer : PlayableBehaviour, IMaterialProvider
+public class RendererMixer : PlayableBehaviour, IMixer
 {
     /// <summary>
     /// Assumed to be of equal length as <see cref="AvailableMaterials"/>.
@@ -25,6 +25,12 @@ public class RendererMixer : PlayableBehaviour, IMaterialProvider
     /// available material.
     /// </summary>
     MaterialPropertyBlock[] initialBlocks;
+
+    readonly RenderTextureCache renderTextureCache = new RenderTextureCache();
+    readonly Texture2DCache texture2DCache = new Texture2DCache();
+
+    public RenderTextureCache RenderTextureCache => renderTextureCache;
+    public Texture2DCache Texture2DCache => texture2DCache;
 
     /// <summary>
     /// All materials the bound renderer references
@@ -79,10 +85,12 @@ public class RendererMixer : PlayableBehaviour, IMaterialProvider
         }
 
         // Get clips contributing to the current frame (weight > 0)
-        int[] activeClips = (from i in Enumerable.Range(0, inputCount)
-                             where playable.GetInputWeight(i) > 0f
-                             select i).ToArray();
-        if (activeClips.Length == 0)
+        List<int> activeClips = Enumerable
+            .Range(0, inputCount)
+            .Where(i => playable.GetInputWeight(i) > 0)
+            .ToList();
+
+        if (activeClips.Count == 0)
             return;
 
         // The index of the first found active clip of this frame
@@ -119,22 +127,12 @@ public class RendererMixer : PlayableBehaviour, IMaterialProvider
             if (block.isEmpty)
                 boundRenderer.GetPropertyBlock(block);
 
-            if (activeClips.Length == 1)
-            {
-                if (clipWeight < 1f)
-                {
-                    // The clip blends with the layer background.
-                    // Mix clip into block.
-                    ApplyToBehaviour(block, mix, slotIndex);
-                    mix.Lerp(mix, clipData, clipWeight);
-                }
-            }
-            else
+            if (activeClips.Count > 1)
             {
                 // Two clips are blended.
                 // As long as a valid LayerMixer exists, there can be at most
                 // two active clips at one specific frame.
-                var next = GetBehaviour(playable, clipIndex + 1);
+                var next = GetBehaviour(playable, activeClips[1]);
 
                 if (clipData.IsBlendableWith(next))
                 {
@@ -157,6 +155,13 @@ public class RendererMixer : PlayableBehaviour, IMaterialProvider
                     ApplyToBehaviour(block, mix, slotIndex);
                     mix.Lerp(mix, clipData, clipWeight);
                 }
+            }
+            else if (clipWeight < 1f)
+            {
+                // The clip blends with the layer background.
+                // Mix clip into block.
+                ApplyToBehaviour(block, mix, slotIndex);
+                mix.Lerp(mix, clipData, clipWeight);
             }
 
             mix.ApplyToPropertyBlock(block);

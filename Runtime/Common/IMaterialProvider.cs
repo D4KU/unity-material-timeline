@@ -14,4 +14,10 @@ public interface IMaterialProvider
     /// </summary>
     public IEnumerable<Material> Materials { get; }
 }
+
+public interface IMixer : IMaterialProvider
+{
+    public RenderTextureCache RenderTextureCache { get; }
+    public Texture2DCache Texture2DCache { get; }
+}
 }

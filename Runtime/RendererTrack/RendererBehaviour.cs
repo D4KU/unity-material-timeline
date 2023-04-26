@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.Playables;
 using UnityEngine.Rendering;
 using System;
@@ -36,7 +36,7 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
     /// <summary>
     /// Object providing the manipulated materials. Set from the outside.
     /// </summary>
-    public IMaterialProvider provider;
+    public IMixer mixer;
 
     [Tooltip("Name of the shader property to manipulate")]
     public string propertyName = "";
@@ -58,7 +58,7 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
     public TextureTarget textureTarget;
 
     /// <inheritdoc cref="IMaterialProvider.Materials"/>
-    public IEnumerable<Material> Materials => provider?.Materials;
+    public IEnumerable<Material> Materials => mixer?.Materials;
 
     /// To not search for a shader every frame that we'll never find.
     /// Only considered in builds.
@@ -104,6 +104,7 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
         texture       = other.texture;
         vector        = other.vector;
         textureTarget = other.textureTarget;
+        mixer         = other.mixer;
     }
 
     protected bool HasProperty(Material material)
@@ -115,19 +116,24 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
     /// </summary>
     public virtual void Lerp(RendererBehaviour a, RendererBehaviour b, float t)
     {
-        if (propertyType == Spt.Texture && textureTarget == TextureTarget.Asset)
-        {
-            Texture texA = a.texture ? a.texture : a.vector.ToTexture2D();
-            Texture texB = b.texture ? b.texture : b.vector.ToTexture2D();
-            texture = BlendTextures(texA, texB, t);
-
-            // If blend failed, resort to hard cut
-            if (texture == null)
-                texture = t < .5f ? texA : texB;
-        }
         // Lerp vector even if target is a texture asset, because it is then
         // used to store the texture default value.
         vector = Vector4.Lerp(a.vector, b.vector, t);
+
+        if (propertyType != Spt.Texture || textureTarget != TextureTarget.Asset)
+            return;
+
+        var cache = mixer.Texture2DCache;
+        if (a.texture == null && b.texture == null)
+        {
+            texture = cache.GetTexture(vector);
+            return;
+        }
+
+        texture = BlendTextures(
+            a: a.texture ? a.texture : cache.GetTexture(a.vector),
+            b: b.texture ? b.texture : cache.GetTexture(b.vector),
+            t: t);
     }
 
     /// <summary>
@@ -278,26 +284,27 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
         if (a.dimension != TextureDimension.Tex2D ||
             b.dimension != TextureDimension.Tex2D ||
             BlendMaterial == null)
-            return null;
+        {
+            // Blend failed, resort to hard cut
+            return t < .5 ? a : b;
+        }
 
         // Set 'b' and 't' in material for blending.
         // 'a' is set by Graphics.Blit() to the '_MaintTex' property.
         blendMaterial.SetTexture("_SideTex", b);
         blendMaterial.SetFloat("_Weight", t);
 
-        RenderTexture result = new RenderTexture(
+        RenderTexture mix = mixer.RenderTextureCache.GetTexture(
             width:  (int)Mathf.Lerp(a.width,  b.width,  t),
-            height: (int)Mathf.Lerp(a.height, b.height, t),
-            depth: 0)
-        {
-            anisoLevel = (int)Mathf.Lerp(a.anisoLevel, b.anisoLevel, t),
-            filterMode = (FilterMode)Mathf.Lerp((int)a.filterMode, (int)b.filterMode, t),
-            wrapMode   = a.wrapMode,
-        };
+            height: (int)Mathf.Lerp(a.height, b.height, t));
+
+        mix.anisoLevel = (int)Mathf.Lerp(a.anisoLevel, b.anisoLevel, t);
+        mix.filterMode = (FilterMode)Mathf.Lerp((int)a.filterMode, (int)b.filterMode, t);
+        mix.wrapMode   = a.wrapMode;
 
         // Render blend of both given textures to render texture.
-        Graphics.Blit(a, result, blendMaterial);
-        return result;
+        Graphics.Blit(a, mix, blendMaterial);
+        return mix;
     }
 
     /// <summary>

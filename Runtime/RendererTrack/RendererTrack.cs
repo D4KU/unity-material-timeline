@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 using UnityEngine.Playables;
 using UnityEngine.Timeline;
@@ -23,26 +22,20 @@ public class RendererTrack : TrackAsset, ILayerable
     public override Playable CreateTrackMixer(
         PlayableGraph graph, GameObject go, int inputCount)
     {
-        InitializeTemplate(go);
+        // Initialize template
+        if (this.TryGetBinding(go, out Renderer renderer))
+        {
+            template.boundRenderer = renderer;
+            ExtensionMethods.ResizeArray(
+                array: ref template.mask,
+                newSize: renderer.sharedMaterials.Length,
+                defaultValue: true);
+        }
+
         var mixer = ScriptPlayable<RendererMixer>.Create(graph, template, inputCount);
-        InitializeClips(mixer.GetBehaviour());
-        return mixer;
-    }
+        var behaviour = mixer.GetBehaviour();
 
-    void InitializeTemplate(GameObject go)
-    {
-        if (!this.TryGetBinding(go, out Renderer renderer))
-            return;
-
-        template.boundRenderer = renderer;
-        ExtensionMethods.ResizeArray(
-            array: ref template.mask,
-            newSize: renderer.sharedMaterials.Length,
-            defaultValue: true);
-    }
-
-    void InitializeClips(IMaterialProvider provider)
-    {
+        // Initialize clips
         foreach (TimelineClip clip in GetClips())
         {
             // Set display name of each clip
@@ -52,8 +45,10 @@ public class RendererTrack : TrackAsset, ILayerable
             // The track mixer created in this class is the object providing
             // each clip's behaviour access to the materials of the bound
             // renderer.
-            data.provider = provider;
+            data.mixer = behaviour;
         }
+
+        return mixer;
     }
 
     /// <summary>

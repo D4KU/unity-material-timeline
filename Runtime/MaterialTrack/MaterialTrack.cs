@@ -20,26 +20,24 @@ public class MaterialTrack : TrackAsset, ILayerable
         PlayableGraph graph, GameObject go, int inputCount)
     {
         var mixer = ScriptPlayable<MaterialMixer>.Create(graph, inputCount);
-        InitializeClips(mixer.GetBehaviour());
-        return mixer;
-    }
+        var behaviour = mixer.GetBehaviour();
 
-    void InitializeClips(IMaterialProvider provider)
-    {
+        // Initialize clips
         foreach (TimelineClip clip in GetClips())
         {
             // Set display name of each clip
             var data = ((MaterialClip)clip.asset).template;
-            if (data.materialMode)
-                clip.displayName = data.material ? data.material.name : "Empty";
-            else
-                clip.displayName = RendererTrack.BuildClipName(data);
+            clip.displayName = data.materialMode
+                ? (data.material ? data.material.name : RendererTrack.EMPTY_SLOT_NAME)
+                : RendererTrack.BuildClipName(data);
 
             // The track mixer created in this class is the object providing
             // each clip's behaviour access to the materials of the bound
             // renderer.
-            data.provider = provider;
+            data.mixer = behaviour;
         }
+
+        return mixer;
     }
 }
 }
