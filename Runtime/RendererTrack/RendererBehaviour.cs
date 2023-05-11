@@ -34,7 +34,8 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
     }
 
     /// <summary>
-    /// Object providing the manipulated materials. Set from the outside.
+    /// Mixer Behaviour of the track the clip of this behaviour is in.
+    /// Set on instantiation.
     /// </summary>
     public IMixer mixer;
 
@@ -124,12 +125,17 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
             return;
 
         var cache = mixer.Texture2DCache;
+
+        // Blend colors of behaviours and bake the result into a texture
+        // if both blended clips have no texture assigned
         if (a.texture == null && b.texture == null)
         {
             texture = cache.GetTexture(vector);
             return;
         }
 
+        // Blend textures. If one clip has no texture assigned, mix its
+        // color with the texture of the other one.
         texture = BlendTextures(
             a: a.texture ? a.texture : cache.GetTexture(a.vector),
             b: b.texture ? b.texture : cache.GetTexture(b.vector),

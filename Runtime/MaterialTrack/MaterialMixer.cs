@@ -22,11 +22,19 @@ public class MaterialMixer : PlayableBehaviour, IMixer
     /// </summary>
     bool firstFrameHappened;
 
+    /// <inheritdoc cref="RendererMixer.renderTextureCache"/>
     readonly RenderTextureCache renderTextureCache = new RenderTextureCache();
+
+    /// <inheritdoc cref="RendererMixer.texture2DCache"/>
     readonly Texture2DCache texture2DCache = new Texture2DCache();
 
+    /// <inheritdoc cref="IMixer.RenderTextureCache"/>
     public RenderTextureCache RenderTextureCache => renderTextureCache;
+
+    /// <inheritdoc cref="IMixer.Texture2DCache"/>
     public Texture2DCache Texture2DCache => texture2DCache;
+
+    /// <inheritdoc cref="IMaterialProvider.Materials"/>
     public IEnumerable<Material> Materials => boundMaterial ?
         new Material[] { boundMaterial } : new Material[0];
 

@@ -26,33 +26,36 @@ public class RendererMixer : PlayableBehaviour, IMixer
     /// </summary>
     MaterialPropertyBlock[] initialBlocks;
 
-    readonly RenderTextureCache renderTextureCache = new RenderTextureCache();
-    readonly Texture2DCache texture2DCache = new Texture2DCache();
-
-    public RenderTextureCache RenderTextureCache => renderTextureCache;
-    public Texture2DCache Texture2DCache => texture2DCache;
-
     /// <summary>
     /// All materials the bound renderer references
     /// </summary>
     Material[] AvailableMaterials => boundRenderer.sharedMaterials;
 
     /// <summary>
-    /// Materials operated on
+    /// Allows to recycle one <see cref="RenderTexture"/> for texture blending
     /// </summary>
-    public IEnumerable<Material> Materials
-    {
-        get
-        {
-            if (boundRenderer == null)
-                return new Material[0];
-            return AvailableMaterials.Where((_, i) => mask[i]);
-        }
-    }
+    readonly RenderTextureCache renderTextureCache = new RenderTextureCache();
+
+    /// <summary>
+    /// Allows to recycle one <see cref="Texture2D"/> for color-to-texture
+    /// conversion
+    /// </summary>
+    readonly Texture2DCache texture2DCache = new Texture2DCache();
+
+    /// <inheritdoc cref="IMixer.RenderTextureCache"/>
+    public RenderTextureCache RenderTextureCache => renderTextureCache;
+
+    /// <inheritdoc cref="IMixer.Texture2DCache"/>
+    public Texture2DCache Texture2DCache => texture2DCache;
+
+    /// <inheritdoc cref="IMaterialProvider.Materials"/>
+    public IEnumerable<Material> Materials => boundRenderer
+        ? AvailableMaterials.Where((_, i) => mask[i])
+        : new Material[0];
 
     public override void OnPlayableDestroy(Playable playable)
     {
-        if (boundRenderer != null)
+        if (boundRenderer)
             ResetSlots();
     }
 

@@ -2,6 +2,10 @@ using UnityEngine;
 
 namespace MaterialTrack
 {
+/// <summary>
+/// Provides a <see cref="RenderTexture"/> resized to a requested resolution.
+/// The same texture is recycled upon each request.
+/// </summary>
 public class RenderTextureCache
 {
     RenderTexture rt;

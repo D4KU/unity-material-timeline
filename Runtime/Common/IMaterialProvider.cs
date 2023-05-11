@@ -15,6 +15,9 @@ public interface IMaterialProvider
     public IEnumerable<Material> Materials { get; }
 }
 
+/// <summary>
+/// Provides access to data shared between behaviours across one layer
+/// </summary>
 public interface IMixer : IMaterialProvider
 {
     public RenderTextureCache RenderTextureCache { get; }

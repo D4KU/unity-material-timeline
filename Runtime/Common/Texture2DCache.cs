@@ -2,6 +2,10 @@ using UnityEngine;
 
 namespace MaterialTrack
 {
+/// <summary>
+/// Provides a 1x1 <see cref="Texture2D"/> in a requested color.
+/// The same texture is recycled upon each request.
+/// </summary>
 public class Texture2DCache
 {
     Texture2D tex;
