@@ -86,7 +86,7 @@ public class MaterialBehaviour : RendererBehaviour
         // Create a 2D texture from the set default color if behaviour has
         // no texture set
         if (texture == null)
-            texture = vector.ToTexture2D();
+            texture = mixer.Texture2DCache.GetTexture(vector);
 
         if (texture.dimension ==
                 target.shader.GetPropertyTextureDimension(propertyName))

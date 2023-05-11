@@ -215,7 +215,7 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
                 {
                     case TextureTarget.Asset:
                         if (texture == null)
-                            texture = vector.ToTexture2D();
+                            texture = mixer.Texture2DCache.GetTexture(vector);
                         target.SetTexture(propertyName, texture);
                         break;
                     case TextureTarget.TilingOffset:
@@ -262,9 +262,9 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
                     case TextureTarget.Asset:
                         texture = source.GetTexture(propertyName);
                         // default is a white texture mode
-                        string defaultName =
-                            shader.GetPropertyTextureDefaultName(propIndex);
-                        vector = defaultName.TextureDefaultNameToColor();
+                        vector = shader
+                            .GetPropertyTextureDefaultName(propIndex)
+                            .TextureDefaultNameToColor();
                         break;
                     case TextureTarget.TilingOffset:
                         Vector2 scale = source.GetTextureScale(propertyName);
@@ -304,8 +304,8 @@ public class RendererBehaviour : PlayableBehaviour, IMaterialProvider
             width:  (int)Mathf.Lerp(a.width,  b.width,  t),
             height: (int)Mathf.Lerp(a.height, b.height, t));
 
-        mix.anisoLevel = (int)Mathf.Lerp(a.anisoLevel, b.anisoLevel, t);
-        mix.filterMode = (FilterMode)Mathf.Lerp((int)a.filterMode, (int)b.filterMode, t);
+        mix.anisoLevel =             Mathf.CeilToInt(Mathf.Lerp(     a.anisoLevel,      b.anisoLevel, t));
+        mix.filterMode = (FilterMode)Mathf.CeilToInt(Mathf.Lerp((int)a.filterMode, (int)b.filterMode, t));
         mix.wrapMode   = a.wrapMode;
 
         // Render blend of both given textures to render texture.

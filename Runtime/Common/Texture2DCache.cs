@@ -9,14 +9,21 @@ namespace MaterialTrack
 public class Texture2DCache
 {
     Texture2D tex;
+    Color color;
 
     public Texture2D GetTexture(Color color)
     {
-        if (tex == null)
-            tex = new Texture2D(1, 1);
+        bool wasClean = tex == null;
 
-        tex.SetPixel(0, 0, color);
-        tex.Apply();
+        if (wasClean)
+            tex = new Texture2D(1, 1) { filterMode = FilterMode.Point };
+
+        if (wasClean || color != this.color)
+        {
+            this.color = color;
+            tex.SetPixel(0, 0, color);
+            tex.Apply(updateMipmaps: true, makeNoLongerReadable: true);
+        }
         return tex;
     }
 
